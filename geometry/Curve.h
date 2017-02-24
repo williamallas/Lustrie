@@ -30,7 +30,7 @@ namespace tim
         Mesh convertToMesh() const;
 
         template<class RadiusFun> // radiusFun(time, angle)
-        Mesh convertToMesh(const RadiusFun&,  uint resolution = 4, bool mergeLast = false) const;
+        Mesh convertToMesh(const RadiusFun&,  uint resolution = 4, bool mergeLast = false, bool triangle = true) const;
 
         template<class F1, class F2, class F3>
         static Curve parametrization(vec2 range, int numPoints, const F1&&, const F2&&, const F3&&);
@@ -40,15 +40,16 @@ namespace tim
         bool _closed = false;
 
     private:
-        static void tesselateCylindre(BaseMesh&, const eastl::vector<uint>& bottom, const eastl::vector<uint>& top, uint resolution);
+        static void tesselateCylindre(BaseMesh&, const eastl::vector<uint>& bottom, const eastl::vector<uint>& top, uint resolution, bool triangulate);
         static void tesselateCone(BaseMesh&, const eastl::vector<uint>& bottom, uint top, uint resolution);
+
+        static mat3 changeBasis(vec3);
 	};
 
     inline void Curve::setClosed(bool b) { _closed = b; }
     inline bool Curve::isClosed() const { return _closed; }
 
     inline size_t Curve::numPoints() const { return _points.size(); }
-
     inline Curve& Curve::addPoint(vec3 p) { _points.push_back(p); return *this; }
 
     template<class F1, class F2, class F3>
@@ -65,7 +66,7 @@ namespace tim
     }
 
     template<class RadiusFun>
-    Mesh Curve::convertToMesh(const RadiusFun& fun,  uint resolution, bool mergeLast) const
+    Mesh Curve::convertToMesh(const RadiusFun& fun,  uint resolution, bool mergeLast, bool triangle) const
     {
         if(_closed)
             mergeLast = false;
@@ -90,14 +91,7 @@ namespace tim
             else
                 dir = (_points[std::min(i+1, _points.size()-1)] - _points[i==0?0:i-1]).normalized();
 
-            vec3 orthoDir = !fcompare(dir.dot(vec3(0,0,1)), 1, 0.001) ? dir.cross(vec3(0,0,1)) :
-                           (!fcompare(dir.dot(vec3(0,1,0)), 1, 0.001) ? dir.cross(vec3(0,1,0)) : dir.cross(vec3(1,0,0)));
-
-            mat3 base;
-            base[0] = dir.cross(orthoDir);
-            base[1] = orthoDir;
-            base[2] = dir;
-            base.invert();
+            mat3 base = changeBasis(dir);
 
             if(!mergeLast || i < _points.size()-1)
             {
@@ -113,7 +107,7 @@ namespace tim
                 }
 
                 if(i > 0)
-                    tesselateCylindre(mesh, pointIndexes[pmod(static_cast<int>(i)-1,(int)_points.size())], pointIndexes[i%_points.size()], resolution);
+                    tesselateCylindre(mesh, pointIndexes[pmod(static_cast<int>(i)-1,(int)_points.size())], pointIndexes[i%_points.size()], resolution, triangle);
             }
             else // we need to create a unique point closing the mesh
             {
