@@ -45,8 +45,8 @@ namespace tim
 
     mat3 Curve::changeBasis(vec3 dir)
     {
-        vec3 orthoDir = !fcompare(dir.dot(vec3(0,0,1)), 1, 0.001) ? dir.cross(vec3(0,0,1)) :
-                       (!fcompare(dir.dot(vec3(0,1,0)), 1, 0.001) ? dir.cross(vec3(0,1,0)) : dir.cross(vec3(1,0,0)));
+        vec3 orthoDir = !fcompare(dir.dot(vec3(0,0,1)), 1, 0.001f) ? dir.cross(vec3(0,0,1)) :
+                       (!fcompare(dir.dot(vec3(0,1,0)), 1, 0.001f) ? dir.cross(vec3(0,1,0)) : dir.cross(vec3(1,0,0)));
 
         mat3 base;
         base[0] = dir.cross(orthoDir);

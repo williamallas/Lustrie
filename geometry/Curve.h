@@ -101,7 +101,7 @@ namespace tim
                     {
                         const float theta_norm = static_cast<float>(j) / resolution;
                         const float theta = theta_norm * 2*PI;
-                        mesh.addVertex(_points[i] + base * (vec3(cosf(theta), sinf(theta), 0) * fun(timeStep * i, theta_norm)));
+                        mesh.addVertex(_points[i] + base * (vec3(cosf(theta), sinf(theta), 0.f) * fun(timeStep * i, theta_norm)));
                         pointIndexes[i][j] = curIndex+j;
                     }
                 }

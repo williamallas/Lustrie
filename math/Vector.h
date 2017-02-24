@@ -231,7 +231,7 @@ namespace tim
             if(INDEX >= N) return;
 
             for(size_t i=0 ; i<std::min(N-INDEX, NN) ; ++i)
-                _val[INDEX+i] = v[i];
+                _val[INDEX+i] = static_cast<T>(v[i]);
         }
 
         template<class TT>
@@ -243,7 +243,7 @@ namespace tim
         template <size_t INDEX, class First, class... Rest>
         void construct(First first, Rest... rest)
         {
-            copy_data_at(INDEX, first);
+            copy_data_at(INDEX, static_cast<T>(first));
             construct<INDEX+TypeLength<First>::value, Rest...>(rest...);
         }
 
