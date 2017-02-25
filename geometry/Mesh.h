@@ -7,6 +7,7 @@
 #include <fstream>
 
 #include "math/Vector.h"
+#include "core/ImageAlgorithm.h"
 
 namespace tim
 {
@@ -45,14 +46,21 @@ namespace tim
 
    private:
         std::ofstream& writeVertex(std::ofstream&, uint) const;
+
+	protected:
+		static void generateGrid(BaseMesh&, vec2 size, uivec2 resolution, const ImageAlgorithm<float>&, float Zscale, bool withUV, bool triangulate);
 	};
 
     inline BaseMesh& BaseMesh::addFace(const Face& face) { _faces.push_back(face); return *this; }
 
 
+	/* Mesh */
+
     class Mesh : public BaseMesh
     {
     public:
+		using Vertex = vec3;
+
         using BaseMesh::BaseMesh;
 
         Mesh& addVertex(vec3);
@@ -60,7 +68,14 @@ namespace tim
         Mesh& constructLine(vec3, vec3);
         Mesh& constructTriangle(vec3, vec3, vec3);
         Mesh& constructQuad(vec3, vec3, vec3, vec3);
+
+		static Mesh generateGrid(vec2 size, uivec2 resolution, const ImageAlgorithm<float>&, float Zscale, bool triangulate = false);
     };
+
+	inline Mesh& Mesh::addVertex(vec3 v) { _vertices.push_back(v); return *this; }
+
+
+	/* UV Mesh */
 
     class UVMesh : public BaseMesh
     {
@@ -74,7 +89,9 @@ namespace tim
         UVMesh& constructLine(const Vertex&, const Vertex&);
         UVMesh& constructTriangle(const Vertex&, const Vertex&, const Vertex&);
         UVMesh& constructQuad(const Vertex&, const Vertex&, const Vertex&, const Vertex&);
+
+		static UVMesh generateGrid(vec2 size, uivec2 resolution, const ImageAlgorithm<float>&, float Zscale, bool triangulate = false);
     };
 
-    inline Mesh& Mesh::addVertex(vec3 v) { _vertices.push_back(v); return *this; }
+	inline UVMesh& UVMesh::addVertex(const Vertex& v) { _vertices.push_back(v.v); _texCoords.push_back(v.uv); return *this; }
 }
