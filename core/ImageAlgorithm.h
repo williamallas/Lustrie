@@ -4,6 +4,11 @@
 #include "math/PascaleTriangle.h"
 #include "math/Matrix.h"
 
+#include "type.h"
+
+#include <EASTL/string.h>
+#include <fstream>
+
 namespace tim
 {
     template <class T>
@@ -40,11 +45,13 @@ namespace tim
         const T& clamp_get(int x, int y) const;
         T& clamp_get(int x, int y);
 
-        ImageAlgorithm blur3x3() const;
-        template <uint KS> ImageAlgorithm blur() const;
+        ImageAlgorithm blured3x3() const;
+        template <uint KS> ImageAlgorithm blured() const;
 
         ImageAlgorithm resized(uivec2) const;
         ImageAlgorithm transformed(const imat2&) const;
+
+        template<class F> void exportBMP(eastl::string, const F&) const; // expect a T -> vec3 function
 
     private:
         T* _data;
@@ -205,6 +212,8 @@ namespace tim
         const T& nx_py = clamp_get(int(v.x()), int(v.y())+1);
         const T& px_py = clamp_get(int(v.x())+1, int(v.y())+1);
 
+        v = { v.x()-floorf(v.x()), v.y()-floorf(v.y()) };
+
         return interpolateCos2(nx_ny, px_ny, nx_py, px_py, v.x(), v.y());
     }
 
@@ -238,7 +247,7 @@ namespace tim
     }
 
     template <class T>
-    ImageAlgorithm<T> ImageAlgorithm<T>::blur3x3() const
+    ImageAlgorithm<T> ImageAlgorithm<T>::blured3x3() const
     {
         ImageAlgorithm<T> img(_size);
         for(int i=0 ; i<static_cast<int>(_size.x()) ; ++i)
@@ -257,16 +266,16 @@ namespace tim
 
     template <class T>
     template<uint KS>
-    ImageAlgorithm<T> ImageAlgorithm<T>::blur() const
+    ImageAlgorithm<T> ImageAlgorithm<T>::blured() const
     {
         static_assert(KS%2==1, "KS must be odd.");
-        static PascaleTriangle COEF(KS);
+        static const PascaleTriangle COEF(KS);
 
         ImageAlgorithm<T> imgH(_size);
         for(int i=0 ; i<static_cast<int>(_size.x()) ; ++i)
             for(int j=0 ; j<static_cast<int>(_size.y()) ; ++j)
         {
-            T c;
+            T c = 0;
             for(int k=-(int(KS)-1)/2 ; k<=(int(KS)-1)/2 ; ++k)
                 c += clamp_get(i+k,j) * float(float(COEF.getRow(KS-1)[k+(KS-1)/2]) / (1<<(KS-1)));
 
@@ -277,7 +286,7 @@ namespace tim
         for(int i=0 ; i<static_cast<int>(_size.x()) ; ++i)
             for(int j=0 ; j<static_cast<int>(_size.y()) ; ++j)
         {
-            T c;
+            T c = 0;
             for(int k=-(int(KS)-1)/2 ; k<=(int(KS)-1)/2 ; ++k)
                 c += imgH.clamp_get(i,j+k) * float(float(COEF.getRow(KS-1)[k+(KS-1)/2]) / (1<<(KS-1)));
 
@@ -381,4 +390,78 @@ namespace tim
         return img;
     }
 
+    template <class T>
+    template<class F>
+    void ImageAlgorithm<T>::exportBMP(eastl::string filename, const F& fun) const
+    {
+        std::ofstream stream(filename.c_str(), std::ios_base::binary);
+        if(!stream)
+            return;
+
+        byte file[14] = {
+            'B','M', // magic
+            0,0,0,0, // size in bytes
+            0,0, // app data
+            0,0, // app data
+            40+14,0,0,0 // start of data offset
+        };
+        byte info[40] = {
+            40,0,0,0, // info hd size
+            0,0,0,0, // width
+            0,0,0,0, // heigth
+            1,0, // number color planes
+            24,0, // bits per pixel
+            0,0,0,0, // compression is none
+            0,0,0,0, // image bits size
+            0x13,0x0B,0,0, // horz resoluition in pixel / m
+            0x13,0x0B,0,0, // vert resolutions (0x03C3 = 96 dpi, 0x0B13 = 72 dpi)
+            0,0,0,0, // #colors in pallete
+            0,0,0,0, // #important colors
+            };
+
+        int w=_size.x();
+        int h=_size.y();
+
+        int padSize  = (4-w%4)%4;
+        int sizeData = w*h*3 + h*padSize;
+        int sizeAll  = sizeData + sizeof(file) + sizeof(info);
+
+        file[ 2] = (byte)( sizeAll    );
+        file[ 3] = (byte)( sizeAll>> 8);
+        file[ 4] = (byte)( sizeAll>>16);
+        file[ 5] = (byte)( sizeAll>>24);
+
+        info[ 4] = (byte)( w   );
+        info[ 5] = (byte)( w>> 8);
+        info[ 6] = (byte)( w>>16);
+        info[ 7] = (byte)( w>>24);
+
+        info[ 8] = (byte)( h    );
+        info[ 9] = (byte)( h>> 8);
+        info[10] = (byte)( h>>16);
+        info[11] = (byte)( h>>24);
+
+        info[24] = (byte)( sizeData    );
+        info[25] = (byte)( sizeData>> 8);
+        info[26] = (byte)( sizeData>>16);
+        info[27] = (byte)( sizeData>>24);
+
+        stream.write( (char*)file, sizeof(file) );
+        stream.write( (char*)info, sizeof(info) );
+
+        byte pad[3] = {0,0,0};
+
+        for (int x=0 ; x<w ; ++x)
+        {
+            for (int y=0 ; y<h ; ++y)
+            {
+                bvec3 color = fun(get({uint(x),uint(y)}));
+                char* b=reinterpret_cast<char*>(&color);
+                stream.write(b+2, 1);
+                stream.write(b+1, 1);
+                stream.write(b, 1);
+            }
+            stream.write((char*)pad, padSize);
+        }
+    }
 }
