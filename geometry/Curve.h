@@ -74,68 +74,79 @@ namespace tim
     template<class RadiusFun>
     Mesh Curve::convertToMesh(const RadiusFun& fun,  uint resolution, bool mergeLast, bool triangle) const
     {
-        if(_closed)
-            mergeLast = false;
-
-        if(resolution < 3  || _points.size() <= 2)
-            return Mesh();
-
-        Mesh mesh;
-
-        float timeStep = 1.f / _points.size();
-        eastl::vector<eastl::vector<uint>> pointIndexes(_points.size(), eastl::vector<uint>(resolution));
-        uint curIndex=0;
-
-        for(size_t i = 0 ; i<_points.size()+1 ; ++i)
-        {
-            if(i == _points.size() && !_closed)
-                break;
-
-            vec3 dir;
-            if(_closed)
-                dir = (_points[(i+1)%_points.size()] - _points[pmod(static_cast<int>(i)-1,(int)_points.size())]).normalized();
-            else
-                dir = (_points[std::min(i+1, _points.size()-1)] - _points[i==0?0:i-1]).normalized();
-
-            mat3 base = changeBasis(dir);
-
-            if(!mergeLast || i < _points.size()-1)
-            {
-                if(i < _points.size())
-                {
-                    for(uint j=0 ; j<resolution ; ++j)
-                    {
-                        const float theta_norm = static_cast<float>(j) / resolution;
-                        const float theta = theta_norm * 2*PI;
-                        mesh.addVertex(_points[i] + base * (vec3(cosf(theta), sinf(theta), 0.f) * fun(timeStep * i, theta_norm)));
-                        pointIndexes[i][j] = curIndex+j;
-                    }
-                }
-
-                if(i > 0)
-                    tesselateCylindre(mesh, pointIndexes[pmod(static_cast<int>(i)-1,(int)_points.size())], pointIndexes[i%_points.size()], resolution, triangle);
-            }
-            else // we need to create a unique point closing the mesh
-            {
-                mesh.addVertex(_points[i%_points.size()] + base * (vec3::construct(0) * fun(timeStep * i, 0)));
-                tesselateCone(mesh, pointIndexes[i-1], curIndex, resolution);
-            }
-
-            curIndex += resolution;
-        }
-
-        return mesh;
+		return convertToMesh<RadiusFun, Mesh>(fun, resolution, mergeLast, triangle);
     }
 
     template<class RadiusFun>
     UVMesh Curve::convertToUVMesh(const RadiusFun& fun,  uint resolution, bool mergeLast, bool triangle) const
     {
-
+		return convertToMesh<RadiusFun, UVMesh>(fun, resolution, mergeLast, triangle);
     }
+
+	namespace 
+	{
+		template<class T> struct AddVertex {};
+		template<>      struct AddVertex<Mesh> { static void add(Mesh& m, vec3 pos, vec2 uv) { m.addVertex(pos); } };
+		template<>      struct AddVertex<UVMesh> { static void add(UVMesh& m, vec3 pos, vec2 uv) { m.addVertex({ pos,uv }); } };
+	}
 
     template<class RadiusFun, class TypeMesh>
     TypeMesh Curve::convertToMesh(const RadiusFun& fun,  uint resolution, bool mergeLast, bool triangle) const
     {
+		if (_closed)
+			mergeLast = false;
 
+		TypeMesh mesh;
+
+		if (resolution < 3 || _points.size() <= 2)
+			return mesh;
+
+		float timeStep = 1.f / _points.size();
+		eastl::vector<eastl::vector<uint>> pointIndexes(_points.size(), eastl::vector<uint>(resolution));
+		uint curIndex = 0;
+
+		for (size_t i = 0; i<_points.size() + 1; ++i)
+		{
+			if (i == _points.size() && !_closed)
+				break;
+
+			vec3 dir;
+			if (_closed)
+				dir = (_points[(i + 1) % _points.size()] - _points[pmod(static_cast<int>(i) - 1, (int)_points.size())]).normalized();
+			else
+				dir = (_points[std::min(i + 1, _points.size() - 1)] - _points[i == 0 ? 0 : i - 1]).normalized();
+
+			mat3 base = changeBasis(dir);
+
+			if (!mergeLast || i < _points.size() - 1)
+			{
+				if (i < _points.size())
+				{
+					for (uint j = 0; j<resolution; ++j)
+					{
+						const float theta_norm = static_cast<float>(j) / resolution;
+						const float theta = theta_norm * 2 * PI;
+						vec3 p = _points[i] + base * (vec3(cosf(theta), sinf(theta), 0.f) * fun(timeStep * i, theta_norm));
+						vec2 uv = vec2(theta_norm, timeStep * i);
+						AddVertex<TypeMesh>::add(mesh, p, uv);
+						pointIndexes[i][j] = curIndex + j;
+					}
+				}
+
+				if (i > 0)
+					tesselateCylindre(mesh, pointIndexes[pmod(static_cast<int>(i) - 1, (int)_points.size())], pointIndexes[i%_points.size()], resolution, triangle);
+			}
+			else // we need to create a unique point closing the mesh
+			{
+				vec3 p = _points[i%_points.size()] + base * (vec3::construct(0) * fun(timeStep * i, 0));
+				vec2 uv = vec2(0.5, timeStep * i);
+				AddVertex<TypeMesh>::add(mesh, p, uv);
+				tesselateCone(mesh, pointIndexes[i - 1], curIndex, resolution);
+			}
+
+			curIndex += resolution;
+		}
+
+		return mesh;
     }
 }
