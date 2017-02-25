@@ -32,6 +32,9 @@ namespace tim
         template<class RadiusFun> // radiusFun(time, angle)
         Mesh convertToMesh(const RadiusFun&,  uint resolution = 4, bool mergeLast = false, bool triangle = true) const;
 
+        template<class RadiusFun> // radiusFun(time, angle)
+        UVMesh convertToUVMesh(const RadiusFun&,  uint resolution = 4, bool mergeLast = false, bool triangle = true) const;
+
         template<class F1, class F2, class F3>
         static Curve parametrization(vec2 range, int numPoints, const F1&&, const F2&&, const F3&&);
 
@@ -44,6 +47,9 @@ namespace tim
         static void tesselateCone(BaseMesh&, const eastl::vector<uint>& bottom, uint top, uint resolution);
 
         static mat3 changeBasis(vec3);
+
+        template<class RadiusFun, class TypeMesh>
+        TypeMesh convertToMesh(const RadiusFun&,  uint resolution, bool mergeLast, bool triangle) const;
 	};
 
     inline void Curve::setClosed(bool b) { _closed = b; }
@@ -119,5 +125,17 @@ namespace tim
         }
 
         return mesh;
+    }
+
+    template<class RadiusFun>
+    UVMesh Curve::convertToUVMesh(const RadiusFun& fun,  uint resolution, bool mergeLast, bool triangle) const
+    {
+
+    }
+
+    template<class RadiusFun, class TypeMesh>
+    TypeMesh Curve::convertToMesh(const RadiusFun& fun,  uint resolution, bool mergeLast, bool triangle) const
+    {
+
     }
 }

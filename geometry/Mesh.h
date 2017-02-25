@@ -40,7 +40,7 @@ namespace tim
 		eastl::vector<vec3> _vertices;
         eastl::vector<Face> _faces;
         eastl::vector<vec3> _normals;
-        eastl::vector<vec3> _texCoords;
+        eastl::vector<vec2> _texCoords;
 
 
    private:
@@ -60,6 +60,20 @@ namespace tim
         Mesh& constructLine(vec3, vec3);
         Mesh& constructTriangle(vec3, vec3, vec3);
         Mesh& constructQuad(vec3, vec3, vec3, vec3);
+    };
+
+    class UVMesh : public BaseMesh
+    {
+    public:
+        struct Vertex{ vec3 v; vec2 uv; };
+
+        using BaseMesh::BaseMesh;
+
+        UVMesh& addVertex(const Vertex&);
+
+        UVMesh& constructLine(const Vertex&, const Vertex&);
+        UVMesh& constructTriangle(const Vertex&, const Vertex&, const Vertex&);
+        UVMesh& constructQuad(const Vertex&, const Vertex&, const Vertex&, const Vertex&);
     };
 
     inline Mesh& Mesh::addVertex(vec3 v) { _vertices.push_back(v); return *this; }

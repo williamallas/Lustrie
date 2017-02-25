@@ -100,4 +100,48 @@ Mesh& Mesh::constructQuad(vec3 p1, vec3 p2, vec3 p3, vec3 p4)
     return *this;
 }
 
+/* UVMesh */
+
+UVMesh& UVMesh::constructLine(const Vertex& p1, const Vertex& p2)
+{
+    _vertices.push_back(p1.v);
+    _vertices.push_back(p2.v);
+
+    _texCoords.push_back(p1.uv);
+    _texCoords.push_back(p2.uv);
+
+    _faces.push_back({{_vertices.size()-2, _vertices.size()-1, 0, 0}, 2});
+    return *this;
+}
+
+UVMesh& UVMesh::constructTriangle(const Vertex& p1, const Vertex& p2, const Vertex& p3)
+{
+    _vertices.push_back(p1.v);
+    _vertices.push_back(p2.v);
+    _vertices.push_back(p3.v);
+
+    _texCoords.push_back(p1.uv);
+    _texCoords.push_back(p2.uv);
+    _texCoords.push_back(p3.uv);
+
+    _faces.push_back({{_vertices.size()-3, _vertices.size()-2, _vertices.size()-1, 0}, 3});
+    return *this;
+}
+
+UVMesh& UVMesh::constructQuad(const Vertex& p1, const Vertex& p2, const Vertex& p3, const Vertex& p4)
+{
+    _vertices.push_back(p1.v);
+    _vertices.push_back(p2.v);
+    _vertices.push_back(p3.v);
+    _vertices.push_back(p4.v);
+
+    _texCoords.push_back(p1.uv);
+    _texCoords.push_back(p2.uv);
+    _texCoords.push_back(p3.uv);
+    _texCoords.push_back(p4.uv);
+
+    _faces.push_back({{_vertices.size()-4, _vertices.size()-3, _vertices.size()-2, _vertices.size()-1}, 4});
+    return *this;
+}
+
 }
