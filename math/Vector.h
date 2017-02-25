@@ -239,13 +239,13 @@ namespace tim
         template<class TT>
         void copy_data_at(size_t INDEX, TT val)
         {
-            _val[INDEX]=val;
+            _val[INDEX]=static_cast<T>(val);
         }
 
         template <size_t INDEX, class First, class... Rest>
         void construct(First first, Rest... rest)
         {
-            copy_data_at(INDEX, static_cast<T>(first));
+            copy_data_at(INDEX, first);
             construct<INDEX+TypeLength<First>::value, Rest...>(rest...);
         }
 
