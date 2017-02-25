@@ -24,6 +24,8 @@ namespace tim
             }
         }
 
+        Vector(const T& val) { for(size_t i=0;i<N;++i)_val[i]=val; }
+
 #ifndef USE_VCPP
         template <class First, class... Rest>
         explicit Vector(First first, Rest... rest)
@@ -260,26 +262,25 @@ namespace tim
     typedef Vector4<int> ivec4;
     typedef Vector4<size_t> uivec4;
     typedef Vector4<double> dvec4;
-    typedef Vector4<byte> ubvec4;
-    typedef Vector4<bool> bvec4;
+    typedef Vector4<byte> bvec4;
 
     typedef Vector3<float> vec3;
     typedef Vector3<int> ivec3;
     typedef Vector3<size_t> uivec3;
     typedef Vector3<double> dvec3;
-    typedef Vector3<byte> ubvec3;
+    typedef Vector3<byte> bvec3;
 
     typedef Vector2<float> vec2;
     typedef Vector2<int> ivec2;
     typedef Vector2<size_t> uivec2;
     typedef Vector2<double> dvec2;
-    typedef Vector2<byte> ubvec2;
+    typedef Vector2<byte> bvec2;
 
     typedef Vector<float,1> vec1;
     typedef Vector<int,1> ivec1;
     typedef Vector<size_t,1> uivec1;
     typedef Vector<double,1> dvec1;
-    typedef Vector<byte,1> ubvec1;
+    typedef Vector<byte,1> bvec1;
 }
 
 #include <iostream>

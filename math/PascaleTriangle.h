@@ -19,13 +19,13 @@ namespace tim
                 _data.resize(dummy);
                 // The first row
                 row.resize(1);
-                row.at(0) = 1;
-                _data.at(0) = row;
+                row[0] = 1;
+                _data[0] = row;
                 // The second row
                 if (_data.size() > 1){
                     row.resize(2);
-                    row.at(0) = 1; row.at(1) = 1;
-                    _data.at(1) = row;
+                    row[0] = 1; row[1] = 1;
+                    _data[1] = row;
                 }
                 // The other rows
                 if (_data.size() > 2)
@@ -35,9 +35,9 @@ namespace tim
                         row.resize(i + 1); // Theoretically this should work faster than consecutive push_back()s
                         row.front() = 1;
                         for (uint j = 1; j < row.size() - 1; j++)
-                            row.at(j) = _data.at(i - 1).at(j - 1) + _data.at(i - 1).at(j);
+                            row[j] = _data.at(i - 1).at(j - 1) + _data.at(i - 1).at(j);
                         row.back() = 1;
-                        _data.at(i) = row;
+                        _data[i] = row;
                     }
                 }
             }
