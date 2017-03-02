@@ -86,8 +86,8 @@ namespace tim
 	namespace 
 	{
 		template<class T> struct AddVertex {};
-		template<>      struct AddVertex<Mesh> { static void add(Mesh& m, vec3 pos, vec2 uv) { m.addVertex(pos); } };
-		template<>      struct AddVertex<UVMesh> { static void add(UVMesh& m, vec3 pos, vec2 uv) { m.addVertex({ pos,uv }); } };
+        template<>       struct AddVertex<Mesh> { static void add(Mesh& m, vec3 pos, vec2) { m.addVertex(pos); } };
+        template<>       struct AddVertex<UVMesh> { static void add(UVMesh& m, vec3 pos, vec2 uv) { m.addVertex({ pos,uv }); } };
 	}
 
     template<class RadiusFun, class TypeMesh>

@@ -35,6 +35,8 @@ namespace tim
 
         BaseMesh& addFace(const Face&);
 
+        BaseMesh& operator+=(const BaseMesh&);
+
         void exportToObj(eastl::string) const;
 		
     protected:

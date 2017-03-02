@@ -8,6 +8,34 @@ namespace tim
 
 /* BasicMesh */
 
+BaseMesh& BaseMesh::operator+=(const BaseMesh& mesh)
+{
+    if(_vertices.empty())
+        return (*this = mesh);
+
+    uint startIndex = _vertices.size();
+    for(size_t i=0 ; i<mesh._vertices.size() ; ++i)
+    {
+        _vertices.push_back(mesh._vertices[i]);
+
+        if(!_normals.empty() && !mesh._normals.empty())
+            _normals.push_back(mesh._normals[i]);
+
+        if(!_texCoords.empty() && !mesh._texCoords.empty())
+            _texCoords.push_back(mesh._texCoords[i]);
+    }
+
+    for(size_t i=0 ; i<mesh._faces.size() ; ++i)
+    {
+        _faces.push_back({{mesh._faces[i].indexes[0] + startIndex,
+                           mesh._faces[i].indexes[1] + (mesh._faces[i].nbIndexes>1?startIndex:0),
+                           mesh._faces[i].indexes[2] + (mesh._faces[i].nbIndexes>2?startIndex:0),
+                           mesh._faces[i].indexes[3] + (mesh._faces[i].nbIndexes>3?startIndex:0)}, mesh._faces[i].nbIndexes});
+    }
+
+    return *this;
+}
+
 void BaseMesh::exportToObj(string filename) const
 {
     std::ofstream out(filename.c_str());
@@ -88,7 +116,7 @@ void BaseMesh::generateGrid(BaseMesh& mesh, vec2 size, uivec2 resolution, const 
 		d_img = vec2(float(heightmap.size().x()) / (resolution.x() - 1), float(heightmap.size().y()) / (resolution.y() - 1));
 
 	eastl::vector<eastl::vector<uint>> indexes(resolution.x(), eastl::vector<uint>(resolution.y()));
-	uint curIndex = 0, initial = mesh._vertices.size();
+    uint curIndex = 0;
 	
 	for (uint i = 0; i < resolution.x(); ++i)
 	{
