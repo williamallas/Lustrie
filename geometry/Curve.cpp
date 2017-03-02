@@ -43,15 +43,16 @@ namespace tim
             mesh.addFace({{bottom[i%resolution], top, bottom[(i+1)%resolution], 0}, 3});
     }
 
-    mat3 Curve::changeBasis(vec3 dir)
-    {
-        vec3 orthoDir = !fcompare(dir.dot(vec3(0,0,1)), 1, 0.001f) ? dir.cross(vec3(0,0,1)) :
-                       (!fcompare(dir.dot(vec3(0,1,0)), 1, 0.001f) ? dir.cross(vec3(0,1,0)) : dir.cross(vec3(1,0,0)));
+	vec3 Curve::computeDirection(uint index) const
+	{
+		if (_points.size() <= 1 || index >= _points.size())
+			return vec3();
 
-        mat3 base;
-        base[0] = dir.cross(orthoDir);
-        base[1] = orthoDir;
-        base[2] = dir;
-        return base.inverted();
-    }
+		if (index == 0)
+			return (_points[index + 1] - _points[index]).normalized();
+		else if(index == _points.size()-1)
+			return (_points[index] - _points[index - 1]).normalized();
+		else
+			return (_points[index + 1] - _points[index - 1]).normalized();
+	}
 }

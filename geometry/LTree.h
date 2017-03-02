@@ -3,6 +3,8 @@
 #include "Curve.h"
 #include <EASTL/deque.h>
 
+#include <random>
+
 namespace tim
 {
     class LTree
@@ -29,8 +31,12 @@ namespace tim
 
         eastl::deque<Node, EASTLAllocatorType, 256> _nodePool;
 
+		std::mt19937 _randEngine;
+		std::uniform_real_distribution<float> _random;
+
     private:
         static void accumulateMesh(Mesh&, const Node*);
+		void generateTree(Node*, int depth, int maxDepth);
 
     };
 }

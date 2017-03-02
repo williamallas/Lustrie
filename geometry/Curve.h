@@ -24,6 +24,9 @@ namespace tim
         void setClosed(bool);
         bool isClosed() const;
         size_t numPoints() const;
+		vec3 point(uint) const;
+
+		vec3 computeDirection(uint) const;
 
         Curve& addPoint(vec3);
 
@@ -46,8 +49,6 @@ namespace tim
         static void tesselateCylindre(BaseMesh&, const eastl::vector<uint>& bottom, const eastl::vector<uint>& top, uint resolution, bool triangulate);
         static void tesselateCone(BaseMesh&, const eastl::vector<uint>& bottom, uint top, uint resolution);
 
-        static mat3 changeBasis(vec3);
-
         template<class RadiusFun, class TypeMesh>
         TypeMesh convertToMesh(const RadiusFun&,  uint resolution, bool mergeLast, bool triangle) const;
 	};
@@ -57,6 +58,8 @@ namespace tim
 
     inline size_t Curve::numPoints() const { return _points.size(); }
     inline Curve& Curve::addPoint(vec3 p) { _points.push_back(p); return *this; }
+
+	inline vec3 Curve::point(uint index) const { if (index >= _points.size()) return vec3(); return _points[index]; }
 
     template<class F1, class F2, class F3>
     Curve Curve::parametrization(vec2 range, int numPoints, const F1&& f1, const F2&& f2, const F3&& f3)
@@ -116,7 +119,7 @@ namespace tim
 			else
 				dir = (_points[std::min(i + 1, _points.size() - 1)] - _points[i == 0 ? 0 : i - 1]).normalized();
 
-			mat3 base = changeBasis(dir);
+			mat3 base = mat3::changeBasis(dir);
 
 			if (!mergeLast || i < _points.size() - 1)
 			{
