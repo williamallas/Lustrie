@@ -300,13 +300,12 @@ namespace tim
 
 		static Matrix3 changeBasis(const Vector3<T>& dir)
 		{
-			Vector3<T> orthoDir = !fcompare(dir.dot(Vector3<T>(T(0), T(0), T(1))), 1, 0.001f) ? dir.cross(Vector3<T>(T(0), T(0), T(1))) :
-				(!fcompare(dir.dot(Vector3<T>(T(0), T(1), T(0))), 1, 0.001f) ? dir.cross(Vector3<T>(T(0), T(1), T(0))) : dir.cross(Vector3<T>(T(1), T(0), T(0))));
+            Vector3<T> orthoDir = dir.orthoDir();
 
 			Matrix3 base;
-			base[0] = dir.cross(orthoDir);
-			base[1] = orthoDir;
-			base[2] = dir;
+            base[0] = dir.cross(orthoDir);
+            base[1] = orthoDir;
+            base[2] = dir;
 			return base.inverted();
 		}
     };

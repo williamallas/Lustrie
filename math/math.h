@@ -1,10 +1,15 @@
 #pragma once
 
 #include <cmath>
+#include "extern/rtnorm.hpp"
 
 namespace tim
 {
-    const float PI = 3.141592653589793238462643383279502884197169399375105820974944f;
+    template<typename T> T getPI() { return 3.141592653589793238462643383279502884197169399375105820974944; }
+    template<typename T> T getTAU() { return getPI<T>() * 2; }
+
+    const float PI  = getPI<float>();
+    const float TAU = getTAU<float>();
 	
     inline bool fcompare(float v1, float v2, float d) { return fabsf(v1-v2) <= d; }
 
