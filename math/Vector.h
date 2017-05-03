@@ -70,6 +70,8 @@ namespace tim
             return v;
         }
 
+        size_t size() const { return size_t(N); }
+
         const T& x() const { return _val[0]; }
         const T& y() const { static_assert(N>1, "Invalid component access."); return _val[1]; }
         const T& z() const { static_assert(N>2, "Invalid component access."); return _val[2]; }
@@ -152,6 +154,11 @@ namespace tim
             return res;
         }
 
+        Vector reflect(const Vector& normal) const
+        {
+            return *this - normal * T(2) * dot(normal);
+        }
+
         Vector& saturate()
         {
             T m=_val[0];
@@ -207,6 +214,17 @@ namespace tim
                 memcpy(reinterpret_cast<char*>(&res)+i, &_val[i], 4/A);
             }
             return res+1734642733;
+        }
+
+        Vector orthoDir() const
+        {
+            static_assert(N == 3, "orthoDir() must be called on a Vector3");
+
+            Vector orthoDir = !fcompare(dot(Vector(T(0), T(0), T(1))), 1, 0.001f) ? cross(Vector(T(0), T(0), T(1))) :
+                (!fcompare(dot(Vector(T(0), T(1), T(0))), 1, 0.001f) ? cross(Vector(T(0), T(1), T(0))) : cross(Vector(T(1), T(0), T(0))));
+            orthoDir.normalize();
+
+            return orthoDir;
         }
 
         template <class F>
