@@ -36,6 +36,36 @@ BaseMesh& BaseMesh::operator+=(const BaseMesh& mesh)
     return *this;
 }
 
+BaseMesh BaseMesh::scaled(vec3 scale) const
+{
+    return BaseMesh(*this).mapVertices([&](vec3 v){ return v*scale; })
+                          .mapNormals([&](vec3 n){ return (n*scale).normalized(); });
+}
+
+BaseMesh BaseMesh::translated(vec3 translation) const
+{
+    return BaseMesh(*this).mapVertices([&](vec3 v){ return v+translation; });
+}
+
+
+BaseMesh BaseMesh::transformed(const mat4& tr) const
+{
+    mat3 rot = tr.to<3>();
+    return BaseMesh(*this).mapVertices([&](vec3 v){ return tr*v; })
+                          .mapNormals([&](vec3 n) { return rot*n; });
+}
+
+BaseMesh BaseMesh::rotated(Quat rot) const
+{
+    return BaseMesh(*this).mapVertices(rot).mapNormals(rot);
+}
+
+BaseMesh BaseMesh::rotated(const mat3& rot) const
+{
+    return BaseMesh(*this).mapVertices([&](vec3 v){ return rot*v; })
+                          .mapNormals([&](vec3 n) { return rot*n; });
+}
+
 void BaseMesh::exportToObj(string filename) const
 {
     std::ofstream out(filename.c_str());
@@ -236,6 +266,14 @@ UVMesh UVMesh::generateGrid(vec2 size, uivec2 resolution, const ImageAlgorithm<f
 	UVMesh m;
 	BaseMesh::generateGrid(m, size, resolution, heightmap, Zscale, true, triangulate);
 	return m;
+}
+
+UVMesh UVMesh::uv_scaled(vec2 scale) const
+{
+    UVMesh res = *this;
+    for(vec2& t : res._texCoords)
+        t *= scale;
+    return res;
 }
 
 }

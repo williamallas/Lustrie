@@ -7,6 +7,7 @@
 #include <fstream>
 
 #include "math/Vector.h"
+#include "math/Quaternion.h"
 #include "core/ImageAlgorithm.h"
 
 namespace tim
@@ -33,6 +34,14 @@ namespace tim
         BaseMesh& operator=(const BaseMesh&) = default;
         BaseMesh& operator=(BaseMesh&&) = default;
 
+        BaseMesh scaled(vec3) const; // scale by a vec3 each vertice
+        BaseMesh translated(vec3) const; // translate by a vec3 each vertice
+        BaseMesh transformed(const mat4&) const;
+        BaseMesh rotated(Quat) const;
+        BaseMesh rotated(const mat3&) const;
+
+        uint nbVertices() const;
+
         BaseMesh& addFace(const Face&);
 
         BaseMesh& operator+=(const BaseMesh&);
@@ -48,12 +57,29 @@ namespace tim
 
    private:
         std::ofstream& writeVertex(std::ofstream&, uint) const;
+        template<class T> BaseMesh& mapVertices(const T&);
+        template<class T> BaseMesh& mapNormals(const T&);
 
 	protected:
 		static void generateGrid(BaseMesh&, vec2 size, uivec2 resolution, const ImageAlgorithm<float>&, float Zscale, bool withUV, bool triangulate);
 	};
 
     inline BaseMesh& BaseMesh::addFace(const Face& face) { _faces.push_back(face); return *this; }
+    inline uint BaseMesh::nbVertices() const { return _vertices.size(); }
+
+    template<class T> BaseMesh& BaseMesh::mapVertices(const T& tr)
+    {
+        for(auto& v : _vertices)
+            v = tr(v);
+        return *this;
+    }
+
+    template<class T> BaseMesh& BaseMesh::mapNormals(const T& tr)
+    {
+        for(auto& n : _normals)
+            n = tr(n);
+        return *this;
+    }
 
 
 	/* Mesh */
@@ -91,6 +117,8 @@ namespace tim
         UVMesh& constructLine(const Vertex&, const Vertex&);
         UVMesh& constructTriangle(const Vertex&, const Vertex&, const Vertex&);
         UVMesh& constructQuad(const Vertex&, const Vertex&, const Vertex&, const Vertex&);
+
+        UVMesh uv_scaled(vec2) const;
 
 		static UVMesh generateGrid(vec2 size, uivec2 resolution, const ImageAlgorithm<float>&, float Zscale, bool triangulate = false);
     };
