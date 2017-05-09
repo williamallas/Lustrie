@@ -4,10 +4,6 @@
 namespace tim
 {
 
-PerlinNoise::PerlinNoise()
-{
-}
-
 PerlinNoise::PerlinNoise(uint numLayer, uint firstLayerSize, int seed) : _layers(numLayer)
 {
     for(uint i=0 ; i<numLayer ; ++i)

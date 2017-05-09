@@ -25,6 +25,15 @@ namespace tim
         ImageAlgorithm& operator=(const ImageAlgorithm&);
         ImageAlgorithm& operator=(ImageAlgorithm&&);
 
+        ImageAlgorithm& operator*=(const ImageAlgorithm&);
+        ImageAlgorithm operator*(const ImageAlgorithm&) const;
+
+        ImageAlgorithm& operator+=(const ImageAlgorithm&);
+        ImageAlgorithm operator+(const ImageAlgorithm&) const;
+
+        ImageAlgorithm& operator-=(const ImageAlgorithm&);
+        ImageAlgorithm operator-(const ImageAlgorithm&) const;
+
         uivec2 size() const { return _size; }
         bool empty() const { return _data == nullptr; }
 
@@ -51,7 +60,7 @@ namespace tim
         ImageAlgorithm resized(uivec2) const;
         ImageAlgorithm transformed(const imat2&) const;
 
-        template<class F> void exportBMP(eastl::string, const F&) const; // expect a T -> vec3 function
+        template<class F> void exportBMP(eastl::string, const F&) const; // expect a T -> bvec3 function
 
     private:
         T* _data;
@@ -128,6 +137,60 @@ namespace tim
         img._data = nullptr;
         img._size = uivec2(0,0);
         return *this;
+    }
+
+    template <class T>
+    ImageAlgorithm<T>& ImageAlgorithm<T>::operator*=(const ImageAlgorithm& img)
+    {
+        if(img.size() != size())
+            return *this;
+
+        for(uint i=0 ; i<_size.x() ; ++i)
+            for(uint j=0 ; j<_size.y() ; ++j)
+                set(i,j, get({i,j})*img.get({i,j}));
+        return *this;
+    }
+
+    template <class T>
+    ImageAlgorithm<T> ImageAlgorithm<T>::operator*(const ImageAlgorithm& img) const
+    {
+        return ImageAlgorithm<T>(*this) *= img;
+    }
+
+    template <class T>
+    ImageAlgorithm<T>& ImageAlgorithm<T>::operator+=(const ImageAlgorithm& img)
+    {
+        if(img.size() != size())
+            return *this;
+
+        for(uint i=0 ; i<_size.x() ; ++i)
+            for(uint j=0 ; j<_size.y() ; ++j)
+                set(i,j, get({i,j})+img.get({i,j}));
+        return *this;
+    }
+
+    template <class T>
+    ImageAlgorithm<T> ImageAlgorithm<T>::operator+(const ImageAlgorithm& img) const
+    {
+        return ImageAlgorithm<T>(*this) += img;
+    }
+
+    template <class T>
+    ImageAlgorithm<T>& ImageAlgorithm<T>::operator-=(const ImageAlgorithm& img)
+    {
+        if(img.size() != size())
+            return *this;
+
+        for(uint i=0 ; i<_size.x() ; ++i)
+            for(uint j=0 ; j<_size.y() ; ++j)
+                set(i,j, get({i,j})-img.get({i,j}));
+        return *this;
+    }
+
+    template <class T>
+    ImageAlgorithm<T> ImageAlgorithm<T>::operator-(const ImageAlgorithm& img) const
+    {
+        return ImageAlgorithm<T>(*this) -= img;
     }
 
     template <class T>
@@ -455,7 +518,7 @@ namespace tim
         {
             for (int y=0 ; y<h ; ++y)
             {
-                bvec3 color = fun(get({uint(x),uint(y)}));
+                bvec3 color = bvec3(fun(get({uint(x),uint(y)})));
                 char* b=reinterpret_cast<char*>(&color);
                 stream.write(b+2, 1);
                 stream.write(b+1, 1);

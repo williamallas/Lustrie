@@ -16,7 +16,7 @@ public:
     SampleFunction(const SampleFunction&) = default;
     SampleFunction& operator=(const SampleFunction&) = default;
 
-    void addSample(float);
+    SampleFunction& addSample(float);
     void clear();
 
     float operator()(float) const;

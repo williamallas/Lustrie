@@ -21,9 +21,10 @@ SampleFunction::SampleFunction(std::initializer_list<float> args) : _samples(arg
 
 }
 
-void SampleFunction::addSample(float x)
+SampleFunction& SampleFunction::addSample(float x)
 {
     _samples.push_back(x);
+    return *this;
 }
 
 void SampleFunction::clear()

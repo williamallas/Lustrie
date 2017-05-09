@@ -8,9 +8,11 @@ namespace tim
     class PerlinNoise
     {
     public:
-        PerlinNoise();
         PerlinNoise(uint numLayer, uint firstLayerSize, int seed=42);
         ~PerlinNoise();
+
+        PerlinNoise(const PerlinNoise&) = default;
+        PerlinNoise& operator=(const PerlinNoise&) = default;
 
         ImageAlgorithm<float> generate(uivec2) const;
 

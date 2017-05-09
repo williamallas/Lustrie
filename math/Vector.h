@@ -12,6 +12,8 @@ namespace tim
     class Vector
     {
     public:
+        static const uint Length = N;
+
         Vector() { for(size_t i=0;i<N;++i)_val[i]=T(); }
 
         Vector(std::initializer_list<T> l)
