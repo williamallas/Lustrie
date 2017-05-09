@@ -67,6 +67,16 @@ namespace tim
             void print() const;
         };
 
+        struct LeafParameter
+        {
+            BaseMesh leaf;
+            uint depth = 0;
+            GaussPDF density = 3;
+            GaussPDF orientation = vec2(-PI/2, PI/2);
+            GaussPDF tilt = vec2(-PI/4, PI/4);
+            GaussPDF scale = 1;
+        };
+
         LTree(Parameter, int seed=42);
         ~LTree() = default;
 
@@ -78,6 +88,8 @@ namespace tim
 
         void exportOBJ(eastl::string) const;
         Mesh generateMesh(int resolution = 8) const;
+        UVMesh generateUVMesh(int resolution = 8) const;
+        Mesh generateLeaf(const LeafParameter&) const;
 
         enum PredefinedTree { TREE_1, TREE_2, TREE_3 };
         static Parameter getPredefinedTree(PredefinedTree);
@@ -106,6 +118,7 @@ namespace tim
     private:
         static void accumulateMesh(Mesh&, const Node*, int depth);
         void generateMeshRec(Node*, Mesh&, int, int) const;
+        void generateUVMeshRec(Node*, UVMesh&, int, int) const;
 
         struct GenParam
         {
@@ -119,6 +132,8 @@ namespace tim
         };
 
         Node* generateBranchRec(const Parameter&, Node* parent, vec3 position, vec3 direction, GenParam detailParam);
+
+        uint generateLeafRec(const LeafParameter&, Node*, Mesh&) const;
 
         static vec3 sampleSubCurve(float sample, Curve& curve, uivec2 range, vec3& dir, float& thickness);
 

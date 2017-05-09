@@ -30,6 +30,20 @@ Mesh LTree::generateMesh(int resolution) const
     return mesh;
 }
 
+UVMesh LTree::generateUVMesh(int resolution) const
+{
+    UVMesh mesh;
+    generateUVMeshRec(_root, mesh, resolution, 0);
+    return mesh;
+}
+
+Mesh LTree::generateLeaf(const LeafParameter& leaf) const
+{
+    Mesh m;
+    generateLeafRec(leaf, _root, m);
+    return m;
+}
+
 void LTree::exportOBJ(eastl::string filename) const
 {
     Mesh acc;
@@ -119,6 +133,7 @@ LTree::Node* LTree::generateBranchRec(const Parameter& param, Node* parent, vec3
 
         node->child = generateBranchRec(param, node, pointAtEnd, dir, newGenParam);
     }
+    // now the full curve is generated
 
     // split branchs
     if(detailParam.totalDepth+1 < param.depth && _random(_randEngine) > param.branchEarlyTermination[detailParam.totalDepth+1])
@@ -253,6 +268,53 @@ void LTree::generateMeshRec(Node* node, Mesh& mesh, int resolution, int depth) c
         generateMeshRec(child, mesh, resolution, 0);
 }
 
+void LTree::generateUVMeshRec(Node* node, UVMesh& mesh, int resolution, int depth) const
+{
+    if(depth == 0)
+        mesh += node->curve->convertToUVMesh(resolution, true, false);
+
+    if(node->child)
+        generateUVMeshRec(node->child, mesh, resolution, depth+1);
+
+    for(auto child : node->nodes)
+        generateUVMeshRec(child, mesh, resolution, 0);
+}
+
+uint LTree::generateLeafRec(const LeafParameter& leaf, Node* node, Mesh& acc) const
+{
+    uint depth = 1 << 31;
+    if(node->child)
+    {
+        depth = generateLeafRec(leaf, node->child, acc);
+        for(auto n : node->nodes)
+            generateLeafRec(leaf, n, acc);
+    }
+
+    if(!node->child || depth <= leaf.depth)
+    {
+        float nbLeaff =  (node->curve->point(node->range.y())-node->curve->point(node->range.x())).length() * leaf.density(_randEngine);
+        int nbLeaf = int(nbLeaff) + (_random(_randEngine) < modf(nbLeaff, nullptr) ? 1:0);
+        for(int i=0 ; i<nbLeaf ; ++i)
+        {
+            vec3 dir; float thickness;
+            vec3 pos = sampleSubCurve(_random(_randEngine), *(node->curve), node->range, dir, thickness);
+            vec3 ortho = dir.cross(vec3(0,0,1));
+            vec3 up = ortho.cross(dir);
+
+            mat3 orientation = mat3({dir, ortho, up});
+            acc += leaf.leaf.scaled(vec3::construct(leaf.scale(_randEngine)))
+                            .rotated(Quat::from_axis_angle(ortho, leaf.tilt(_randEngine)))
+                            .rotated(Quat::from_axis_angle(up, (_randEngine()%2==0 ? -1:1) * leaf.orientation(_randEngine)))
+                            .rotated(orientation).translated(pos);
+        }
+    }
+
+    if(!node->child)
+        return 0;
+    else
+        return depth + 1;
+}
+
 vec3 LTree::genDir(vec3 baseDir, float theta, float phi)
 {
     return Quat::from_axis_angle( baseDir, theta )
@@ -339,6 +401,7 @@ LTree::Parameter LTree::Parameter::random(int seed)
     return param;
 }
 
+/*
 void LTree::Parameter::print() const
 {
     std::cout << "nbTrunkStep=" << nbTrunkStep << std::endl;
@@ -363,6 +426,7 @@ void LTree::Parameter::print() const
     std::cout << "curvatureForce=" << curvatureForce[2] << std::endl;
     std::cout << "curvatureThicknessResistance=" << curvatureThicknessResistance << std::endl;
 }
+*/
 
 
 }
