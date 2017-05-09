@@ -42,7 +42,7 @@ public:
     TruncatedGaussianPDF(Vector2<T> range) : _range(range)
     {
         _mean =  (_range.x() + _range.y()) * 0.5;
-        _sigma = (_range.y() - _range.x()) * 0.25;
+        _sigma = (_range.y() - _range.x());
     }
 
     TruncatedGaussianPDF(T range) : TruncatedGaussianPDF(vec2(range)) {}
@@ -55,14 +55,30 @@ public:
     TruncatedGaussianPDF(const TruncatedGaussianPDF&) = default;
     TruncatedGaussianPDF& operator=(const TruncatedGaussianPDF&) = default;
 
-    friend std::ostream& operator<<(std::ostream& os, const TruncatedGaussianPDF<>& pdf);
+    TruncatedGaussianPDF& operator*=(T x)
+    {
+        _mean *= x;
+        _sigma *= x;
+        _range *= x;
+        return *this;
+    }
+
+    TruncatedGaussianPDF operator*(T x) const
+    {
+        TruncatedGaussianPDF pdf = *this;
+        return pdf *= x;
+    }
+
+    //friend std::ostream& operator<<(std::ostream& os, const TruncatedGaussianPDF<>& pdf);
 };
 
+/*
 inline std::ostream& operator<<(std::ostream& os, const TruncatedGaussianPDF<>& pdf)
 {
     os << "mu=" << (pdf._mean) << " sigma=" << (pdf._sigma) << " range=" << pdf._range.x() << "," << pdf._range.y();
     return os;
 }
+*/
 
 }
 
