@@ -29,32 +29,34 @@ namespace tim
         return convertToMesh([this](float,float,int index){ return _points[index].w(); }, resolution, mergeLast, triangle);
     }
 
-    UVMesh Curve::convertToUVMesh(uint resolution, bool mergeLast, bool triangle) const
+    UVMesh Curve::convertToUVMesh(uint resolution, bool mergeLast, bool triangle, bool uniform_uv) const
     {
-        return convertToUVMesh([this](float,float,int index){ return _points[index].w(); }, resolution, mergeLast, triangle);
+        return convertToUVMesh([this](float,float,int index){ return _points[index].w(); }, resolution, mergeLast, triangle, uniform_uv);
     }
 
-    void Curve::tesselateCylindre(BaseMesh& mesh, const eastl::vector<uint>& bottom, const eastl::vector<uint>& top, uint resolution, bool triangulate)
+    void Curve::tesselateCylindre(BaseMesh& mesh, const eastl::vector<uint>& bottom, const eastl::vector<uint>& top, uint resolution, bool triangulate, bool cut)
     {
+        const uint res_mod = resolution + (cut ? 1:0);
         for(uint i=0 ; i<resolution ; ++i)
         {
             if(triangulate)
             {
-                mesh.addFace({{bottom[i%resolution], top[i%resolution], bottom[(i+1)%resolution], 0}, 3});
-                mesh.addFace({{top[i%resolution], top[(i+1)%resolution], bottom[(i+1)%resolution], 0}, 3});
+                mesh.addFace({{bottom[i%res_mod], top[i%res_mod], bottom[(i+1)%res_mod], 0}, 3});
+                mesh.addFace({{top[i%res_mod], top[(i+1)%res_mod], bottom[(i+1)%res_mod], 0}, 3});
             }
             else
             {
-                mesh.addFace({{bottom[i%resolution], top[i%resolution],
-                           top[(i+1)%resolution], bottom[(i+1)%resolution]}, 4});
+                mesh.addFace({{bottom[i%res_mod], top[i%res_mod],
+                           top[(i+1)%res_mod], bottom[(i+1)%res_mod]}, 4});
             }
         }
     }
 
-    void Curve::tesselateCone(BaseMesh& mesh, const eastl::vector<uint>& bottom, uint top, uint resolution)
+    void Curve::tesselateCone(BaseMesh& mesh, const eastl::vector<uint>& bottom, uint top, uint resolution, bool cut)
     {
+        const uint res_mod = resolution + (cut ? 1:0);
         for(uint i=0 ; i<resolution ; ++i)
-            mesh.addFace({{bottom[i%resolution], top, bottom[(i+1)%resolution], 0}, 3});
+            mesh.addFace({{bottom[i%res_mod], top, bottom[(i+1)%res_mod], 0}, 3});
     }
 
 	vec3 Curve::computeDirection(uint index) const
@@ -113,9 +115,11 @@ namespace tim
         eastl::vector<eastl::pair<vec3,vec2>> old(std::move(top));
         top.resize(base.size());
         for(int i=0 ; i<int(base.size()) ; ++i)
-            top[i] = old[(i+bestIndex)%base.size()];
-
+        {
+            top[i].first = old[(i+bestIndex)%base.size()].first;
+            top[i].second = {old[i].second.x(), old[(i+bestIndex)%base.size()].second.y()};
+            //top[i] = old[(i+bestIndex)%base.size()];
+        }
     }
-
 
 }
