@@ -1,11 +1,7 @@
-#ifndef GEOMETRY_H
-#define GEOMETRY_H
+#pragma once
 
-
-class Geometry
+struct Geometry
 {
-public:
-    Geometry();
+    Geometry() = delete;
 };
 
-#endif // GEOMETRY_H
