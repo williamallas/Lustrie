@@ -14,13 +14,24 @@ namespace tim
 
         Matrix(const T data[N*N]) { for(size_t i=0;i<N*N;++i)_val[i]=data[i]; }
 
-        Matrix(std::initializer_list<T> l) : Matrix()
+        /*Matrix(std::initializer_list<T> l) : Matrix()
         {
             if(l.size() > N*N) return;
             auto it=l.begin();
             for(size_t i=0;it!=l.end();++i)
             {
                 _val[i]=*it;
+                it++;
+            }
+        }*/
+
+        Matrix(std::initializer_list<Vector<T,N>> col) : Matrix()
+        {
+            if(col.size() > N) return;
+            auto it=col.begin();
+            for(size_t i=0;it!=col.end();++i)
+            {
+                _mat[i]=*it;
                 it++;
             }
         }

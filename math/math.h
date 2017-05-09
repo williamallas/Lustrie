@@ -16,7 +16,10 @@ namespace tim
     inline float toRad(float deg) { return deg*PI/180.f; }
     inline float toDeg(float rad) { return rad*180.f/PI; }
 	
-    inline uint uipow(uint x, uint p) { uint r=1; for(uint i=0 ; i<p ; i++)r*=x; return r; }
+    template<typename T>
+    inline T uipow(T x, uint p) { T r(1); for(uint i=0 ; i<p ; i++)r*=x; return r; }
+
+    inline float zero(float x) { if(fcompare(x,0,1e-30)) return 0; else return x; }
 
     template <class T>
     T pmod(T x, T m)
