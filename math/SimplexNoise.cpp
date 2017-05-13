@@ -112,7 +112,7 @@ float SimplexNoise3D::noise(vec3 v) const
 
      V[1] = V[0] - vec3(i1, j1, k1) + vec3::construct(G3);       // Offsets for first corner in (x,y,z) coords
      V[2] = V[0] - vec3(i2, j2, k2) + vec3::construct(2.f * G3); // Offsets for third corner in (x,y,z) coords
-     V[3] = V[0] - vec3::construct(1 + 3.f*G3); // Offsets for last corner in (x,y,z) coords
+     V[3] = V[0] - vec3::construct(1) + vec3::construct(3.f*G3); // Offsets for last corner in (x,y,z) coords
 
      // Work out the hashed gradient indices of the four simplex corners
      int ii = i & 255;
