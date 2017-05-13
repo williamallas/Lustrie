@@ -40,6 +40,9 @@ namespace tim
         BaseMesh rotated(Quat) const;
         BaseMesh rotated(const mat3&) const;
 
+        template<class T> BaseMesh& mapVertices(const T&);
+        template<class T> BaseMesh& mapNormals(const T&);
+
         uint nbVertices() const;
 
         BaseMesh& addFace(const Face&);
@@ -47,6 +50,10 @@ namespace tim
         BaseMesh& operator+=(const BaseMesh&);
 
         void exportToObj(eastl::string) const;
+
+        BaseMesh& computeNormals(bool correctSeems = true);
+        BaseMesh& invertNormals();
+        BaseMesh& invertFaces();
 		
     protected:
 		eastl::vector<vec3> _vertices;
@@ -54,11 +61,14 @@ namespace tim
         eastl::vector<vec3> _normals;
         eastl::vector<vec2> _texCoords;
 
+        eastl::vector<eastl::vector<uint>> _vertexToFaces; // for each vertex, we know the faces the vertex is in
+
+        void buildVertexFaceMap(bool useRealPosition);
 
    private:
         std::ofstream& writeVertex(std::ofstream&, uint) const;
-        template<class T> BaseMesh& mapVertices(const T&);
-        template<class T> BaseMesh& mapNormals(const T&);
+
+        vec3 faceNormal(uint) const;
 
 	protected:
 		static void generateGrid(BaseMesh&, vec2 size, uivec2 resolution, const ImageAlgorithm<float>&, float Zscale, bool withUV, bool triangulate);
@@ -81,7 +91,6 @@ namespace tim
         return *this;
     }
 
-
 	/* Mesh */
 
     class Mesh : public BaseMesh
@@ -89,7 +98,15 @@ namespace tim
     public:
 		using Vertex = vec3;
 
-        using BaseMesh::BaseMesh;
+        Mesh() = default;
+        ~Mesh() = default;
+        Mesh(const Mesh&) = default;
+        Mesh(Mesh&&) = default;
+
+        Mesh(const BaseMesh& mesh);
+
+        Mesh& operator=(const Mesh&) = default;
+        Mesh& operator=(Mesh&&) = default;
 
         Mesh& addVertex(vec3);
 
@@ -110,7 +127,15 @@ namespace tim
     public:
         struct Vertex{ vec3 v; vec2 uv; };
 
-        using BaseMesh::BaseMesh;
+        UVMesh() = default;
+        ~UVMesh() = default;
+        UVMesh(const UVMesh&) = default;
+        UVMesh(UVMesh&&) = default;
+
+        UVMesh(const BaseMesh& mesh);
+
+        UVMesh& operator=(const UVMesh&) = default;
+        UVMesh& operator=(UVMesh&&) = default;
 
         UVMesh& addVertex(const Vertex&);
 

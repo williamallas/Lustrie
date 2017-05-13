@@ -1,5 +1,6 @@
 #include "Mesh.h"
 #include <iostream>
+#include <EASTL/unordered_map.h>
 
 using namespace eastl;
 
@@ -119,6 +120,98 @@ void BaseMesh::exportToObj(string filename) const
     }
 }
 
+BaseMesh& BaseMesh::computeNormals(bool correctSeems)
+{
+    _normals.clear();
+    _normals.resize(_vertices.size());
+
+    buildVertexFaceMap(correctSeems);
+
+    for(size_t i=0 ; i<_vertices.size() ; ++i)
+    {
+        vec3 n;
+        for(uint faceIndex : _vertexToFaces[i])
+            n += faceNormal(faceIndex);
+
+        if(n != vec3(0,0,0))
+            _normals[i] = n.normalized();
+    }
+
+    return *this;
+}
+
+BaseMesh& BaseMesh::invertNormals()
+{
+    return mapNormals([](vec3 n) { return -n; });
+}
+
+BaseMesh& BaseMesh::invertFaces()
+{
+    for(auto& face : _faces)
+    {
+        if(face.nbIndexes > 2)
+            eastl::swap(face.indexes[0], face.indexes[1]);
+
+        if(face.nbIndexes == 4)
+            eastl::swap(face.indexes[2], face.indexes[3]);
+    }
+
+    return *this;
+}
+
+namespace
+{
+    struct HashVec3
+    {
+        size_t operator()(const vec3& v) const
+        { return v.hash<3>(); }
+    };
+}
+
+void BaseMesh::buildVertexFaceMap(bool useRealPosition)
+{
+    _vertexToFaces.clear();
+    _vertexToFaces.resize(_vertices.size(), eastl::vector<uint>());
+
+    if(!useRealPosition)
+    {
+        for(size_t indexFace=0 ; indexFace < _faces.size() ; ++indexFace)
+        {
+            for(int i=0 ; i<_faces[indexFace].nbIndexes ; ++i)
+                _vertexToFaces[_faces[indexFace].indexes[i]].push_back(indexFace);
+        }
+    }
+    else
+    {
+        eastl::unordered_map<vec3, vector<uint>, HashVec3> positionToVertex;
+        for(size_t i=0 ; i<_vertices.size() ; ++i)
+            positionToVertex[_vertices[i]].push_back(i);
+
+        for(size_t indexFace=0 ; indexFace < _faces.size() ; ++indexFace)
+        {
+            for(int i=0 ; i<_faces[indexFace].nbIndexes ; ++i)
+            {
+                auto cousin = positionToVertex[_vertices[_faces[indexFace].indexes[i]]];
+
+                for(uint v_id : cousin)
+                    _vertexToFaces[v_id].push_back(indexFace);
+            }
+        }
+    }
+}
+
+vec3 BaseMesh::faceNormal(uint faceIndex) const
+{
+    const Face& face = _faces[faceIndex];
+    if(face.nbIndexes <= 2)
+        return vec3();
+
+    vec3 v1 = _vertices[face.indexes[2]] - _vertices[face.indexes[1]];
+    vec3 v2 = _vertices[face.indexes[0]] - _vertices[face.indexes[1]];
+
+    return v1.cross(v2).normalized();
+}
+
 std::ofstream& BaseMesh::writeVertex(std::ofstream& out, uint index) const
 {
     ++index;
@@ -183,6 +276,8 @@ void BaseMesh::generateGrid(BaseMesh& mesh, vec2 size, uivec2 resolution, const 
 
 /* Mesh */
 
+Mesh::Mesh(const BaseMesh& mesh) : BaseMesh(mesh) {}
+
 Mesh& Mesh::constructLine(vec3 p1, vec3 p2)
 {
     _vertices.push_back(p1);
@@ -218,6 +313,8 @@ Mesh Mesh::generateGrid(vec2 size, uivec2 resolution, const ImageAlgorithm<float
 }
 
 /* UVMesh */
+
+UVMesh::UVMesh(const BaseMesh& mesh) : BaseMesh(mesh) {}
 
 UVMesh& UVMesh::constructLine(const Vertex& p1, const Vertex& p2)
 {
