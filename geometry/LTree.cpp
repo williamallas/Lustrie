@@ -259,7 +259,7 @@ void LTree::accumulateMesh(Mesh& acc, const LTree::Node* node, int depth)
 void LTree::generateMeshRec(Node* node, Mesh& mesh, int resolution, int depth) const
 {
     if(depth == 0)
-        mesh += node->curve->convertToMesh(resolution, true, false);
+        mesh += node->curve->convertToMesh(resolution, true, true);
 
     if(node->child)
         generateMeshRec(node->child, mesh, resolution, depth+1);
@@ -271,7 +271,7 @@ void LTree::generateMeshRec(Node* node, Mesh& mesh, int resolution, int depth) c
 void LTree::generateUVMeshRec(Node* node, UVMesh& mesh, int resolution, int depth) const
 {
     if(depth == 0)
-        mesh += node->curve->convertToUVMesh(resolution, true, false);
+        mesh += node->curve->convertToUVMesh(resolution, true, true);
 
     if(node->child)
         generateUVMeshRec(node->child, mesh, resolution, depth+1);
