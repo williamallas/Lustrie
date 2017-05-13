@@ -14,7 +14,7 @@ void LeafGenerator::generate(const Parameter& param)
 
     SampleFunction fun = leafFunction(0);
 
-    const uint resY = 3;
+    const uint resY = param.smoothAlongY ? 3:2;
     uint startLine[resY];
 
     for(uint y=0 ; y<resY ; ++y)
@@ -36,7 +36,7 @@ void LeafGenerator::generate(const Parameter& param)
                                  vec2(param.size.x() * xcoord, 0)});
             else
             {
-                float ycoord = (y < (resY-1) / 2 ? -funEval : funEval) * param.size.y();
+                float ycoord = (y < 1 ? funEval : -funEval) * param.size.y();
                 _mesh.addVertex({Quat::from_axis_angle(vec3(0,1,0), xcoord * param.curvature)({param.size.x() * xcoord, ycoord,
                                                                                                funEval*param.outerCurvature*param.size.x()}),
                                  vec2(param.size.x() * xcoord, ycoord)});
@@ -51,13 +51,13 @@ void LeafGenerator::generate(const Parameter& param)
         {
             _mesh.addFace({{startLine[1], startLine[1]+1, startLine[0], 0}, 3});
             if(param.smoothAlongY)
-                _mesh.addFace({{startLine[2], startLine[1], startLine[1]+1, 0}, 3});
+                _mesh.addFace({{startLine[2], startLine[1]+1, startLine[1], 0}, 3});
         }
         else if(i == param.resX-2)
         {
-            _mesh.addFace({{startLine[1]+i, startLine[1]+i+1, startLine[0]+indexLastTopV}, 3});
+            _mesh.addFace({{startLine[1]+i, startLine[1]+i+1, startLine[0]+indexLastTopV, 0}, 3});
             if(param.smoothAlongY)
-                _mesh.addFace({{startLine[2]+indexLastTopV, startLine[1]+i, startLine[1]+i+1}, 3});
+                _mesh.addFace({{startLine[2]+indexLastTopV, startLine[1]+i+1, startLine[1]+i, 0}, 3});
         }
         else
         {
@@ -82,8 +82,10 @@ void LeafGenerator::generate(const Parameter& param)
         }
     }
 
+    _mesh.computeNormals(false);
+
     if(!param.smoothAlongY)
-        _mesh += _mesh.scaled(vec3(1,-1,1));
+        _mesh += _mesh.scaled(vec3(1,-1,1)).invertFaces();
 }
 
 SampleFunction LeafGenerator::leafFunction(int choice)
