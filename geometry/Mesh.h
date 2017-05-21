@@ -44,7 +44,9 @@ namespace tim
         template<class T> BaseMesh& mapNormals(const T&);
 
         uint nbVertices() const;
+        vec3 position(uint) const;
 
+        void clearFaces();
         BaseMesh& addFace(const Face&);
 
         BaseMesh& operator+=(const BaseMesh&);

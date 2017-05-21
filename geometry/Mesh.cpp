@@ -9,6 +9,14 @@ namespace tim
 
 /* BasicMesh */
 
+vec3 BaseMesh::position(uint index) const
+{
+    if(index < _vertices.size())
+        return _vertices[index];
+    else
+        return vec3();
+}
+
 BaseMesh& BaseMesh::operator+=(const BaseMesh& mesh)
 {
     if(_vertices.empty())
@@ -273,6 +281,10 @@ void BaseMesh::generateGrid(BaseMesh& mesh, vec2 size, uivec2 resolution, const 
 	}
 }
 
+void BaseMesh::clearFaces()
+{
+    _faces.clear();
+}
 
 /* Mesh */
 

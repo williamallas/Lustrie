@@ -5,7 +5,7 @@
 
 namespace tim
 {
-    template<typename T> T getPI() { return 3.141592653589793238462643383279502884197169399375105820974944; }
+    template<typename T> T getPI() { return T(3.141592653589793238462643383279502884197169399375105820974944); }
     template<typename T> T getTAU() { return getPI<T>() * 2; }
 
     const float PI  = getPI<float>();
@@ -19,7 +19,16 @@ namespace tim
     template<typename T>
     inline T uipow(T x, uint p) { T r(1); for(uint i=0 ; i<p ; i++)r*=x; return r; }
 
-    inline float zero(float x) { if(fcompare(x,0,1e-30)) return 0; else return x; }
+    inline float zero(float x) { if(fcompare(x,0,1e-16f)) return 0.f; else return x; }
+
+    inline float sigma(float x, float strength=2) { return 0.5f+0.5f*tanhf((x-0.5f)*strength); }
+
+    inline float activate(float x, float center, float width)
+    {
+        x=(x-center)/width;
+        x = (x > 1?1 : (x < -1?-1 : x));
+        return x*0.5f+0.5f;
+    }
 
     template <class T>
     T pmod(T x, T m)
