@@ -12,7 +12,7 @@ void LeafGenerator::generate(const Parameter& param)
 {
     _mesh = UVMesh();
 
-    SampleFunction fun = leafFunction(0);
+    SampleFunction fun = leafFunction(param.leafType);
 
     const uint resY = param.smoothAlongY ? 3:2;
     uint startLine[resY];
@@ -94,7 +94,11 @@ SampleFunction LeafGenerator::leafFunction(int choice)
 
     switch(choice)
     {
-    default:
+    case 0:
+        for(float x=0 ; x<=1 ; x += 0.1)
+            fun.addSample(1.2f * (x*(1 - x)));
+
+    case 1:
         fun.addSample(0);
         fun.addSample(0.16*3);
         fun.addSample(0.24*3);
@@ -105,6 +109,23 @@ SampleFunction LeafGenerator::leafFunction(int choice)
         fun.addSample(0.16*3);
         fun.addSample(0.07*3);
         fun.addSample(0.055*3);
+        fun.addSample(0);
+        break;
+
+    case 2:
+    default:
+        fun.addSample(0);
+        fun.addSample(0.5);
+        fun.addSample(0.75);
+        fun.addSample(0.88);
+
+        for(int i=0 ; i<10 ; ++i)
+            fun.addSample(1);
+
+        fun.addSample(0.92);
+        fun.addSample(0.80);
+        fun.addSample(0.6);
+        fun.addSample(0.3);
         fun.addSample(0);
         break;
     }

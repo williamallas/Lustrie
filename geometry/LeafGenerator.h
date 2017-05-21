@@ -21,6 +21,7 @@ namespace tim
             float curvature = 0;
             bool triangulate = true;
             bool smoothAlongY = true;
+            int leafType=0;
         };
 
         LeafGenerator();
