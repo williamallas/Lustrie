@@ -37,7 +37,7 @@ float SampleFunction::operator()(float x) const
     if(_samples.empty())
         return 0;
 
-    x = eastl::min(eastl::max(x, 0), 1);
+    x = eastl::min(eastl::max(x, 0.f), 1.f);
     x = float(_samples.size()-1) * x;
 
     uint x1 = eastl::min(uint(x), _samples.size()-1);

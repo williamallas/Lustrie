@@ -17,27 +17,28 @@ namespace tim
                 _layers.push_back(instancer(i));
         }
 
-        float noise(typename Noise::Point v) const
+        float noise(typename Noise::Point v, eastl::function<float(float)> fun = eastl::function<float(float)>()) const
         {
             float res=0;
             float coef = 0.5f;
             for(size_t i=0 ; i<_layers.size() ; ++i)
             {
-                res += _layers[i].noise(v) * coef;
+                float val = fun ? fun(_layers[i].noise(v)) : _layers[i].noise(v);
+                res += val * coef;
                 coef *= 0.5f;
             }
 
             return res;
         }
 
-        ImageAlgorithm<float> generate(uivec2 res) const
+        ImageAlgorithm<float> generate(uivec2 res, eastl::function<float(float)> fun = eastl::function<float(float)>()) const
         {
             ImageAlgorithm<float> img(res);
             vec2 delta = vec2(1.f / (res.x()-1),1.f / (res.y()-1));
 
             for(uint i=0 ; i<res.x() ; ++i)
                 for(uint j=0 ; j<res.y() ; ++j)
-                    img.set(i,j, noise(delta * vec2(i,j)));
+                    img.set(i,j, noise(delta * vec2(i,j), fun));
 
             return img;
         }
