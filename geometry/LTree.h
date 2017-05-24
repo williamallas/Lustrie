@@ -18,14 +18,14 @@ namespace tim
 
         struct MeshingParameter
         {
-            float trunkThickness = 0.2;
-            vec2 alongTrunkThicknessDecay = {0.8, 0.8};
-            vec2 trunkThicknessDecay = {0.75,0.8};
+            float trunkThickness = 0.2f;
+            vec2 alongTrunkThicknessDecay = {0.8f, 0.8f};
+            vec2 trunkThicknessDecay = {0.75f,0.8f};
 
-            vec2 alongBranchThicknessDecay = {0.7, 0.9};
+            vec2 alongBranchThicknessDecay = {0.7f, 0.9f};
             //bool autoBranchThickness = false;
-            vec2 initialBranchThickness = {0.08, 0.08};
-            vec2 branchThicknessDecay = {0.7,0.9};
+            vec2 initialBranchThickness = {0.08f, 0.08f};
+            vec2 branchThicknessDecay = {0.7f,0.9f};
         };
 
         struct Parameter
@@ -42,18 +42,18 @@ namespace tim
             GaussPDF firstBranchAngleCoef = vec2(1,1);
             eastl::vector<float> branchSplitDensity = {0,1,1};
             eastl::vector<float> branchEarlyTermination = {0,0,0,0.5};
-            float branchSplitNoise = 0.5;
+            float branchSplitNoise = 0.5f;
 
-            float initialBranchSize = 0.5;
+            float initialBranchSize = 0.5f;
             GaussPDF branchSizeDecay = vec2(0.7, 0.7);
             GaussPDF branchSizeCoef = vec2(1,1);
-            float branchSizeStopThreshold = 0.2;
+            float branchSizeStopThreshold = 0.2f;
             SampleFunction branchSizeAlongTrunk={1};
 
-            vec2 trunkBranchRange = {0.3,1};
+            vec2 trunkBranchRange = {0.3f,1};
             GaussPDF trunkBranchDensity = 0;
             GaussPDF extraBranchDensity = 0;
-            float extraBranchSpacing = 0.2;
+            float extraBranchSpacing = 0.2f;
 
             GaussPDF branchJitter = 0;
             GaussPDF naturalBranchBending = 0;

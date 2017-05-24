@@ -7,7 +7,10 @@
 #include "DX12PipelineState.h"
 #include "DX12.h"
 
+#include <geometry\Geometry.h>
+
 using namespace eastl;
+using namespace tim;
 using Microsoft::WRL::ComPtr;
 
 namespace dx12
@@ -44,19 +47,16 @@ namespace dx12
 			return false;
 		}
 
-		// create the command queue
-		D3D12_COMMAND_QUEUE_DESC commandQueueDesc;
-		commandQueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-		commandQueueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
-		commandQueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-		commandQueueDesc.NodeMask = 0;
+		g_device = _device;
 
-		result = _device->CreateCommandQueue(&commandQueueDesc, __uuidof(ID3D12CommandQueue), (void**)&_commandQueue);
-		_ASSERT(result >= 0);
+		_commandQueueManager = eastl::make_unique<CommandQueueManager>(_device);
+		g_commandQueues = _commandQueueManager.get();
+
+		_commandContext = eastl::make_unique<CommandContext>(CommandQueue::DIRECT);
 
 		// create swap chain
-		const int NB_BUFFERS = 2;
 		createSwapChain(NB_BUFFERS, adapters, info);
+		_bufferIndex = 0;
 
 		// create render target view
 		{
@@ -68,58 +68,65 @@ namespace dx12
 			result = _device->CreateDescriptorHeap(&desc, __uuidof(ID3D12DescriptorHeap), (void**)&_renderTargetViewHeap);
 			_ASSERT(result >= 0);
 
-			result = _swapChain->GetBuffer(0, __uuidof(ID3D12Resource), (void**)&_backBufferRenderTarget[0]);
-			_ASSERT(result >= 0);
-			result = _swapChain->GetBuffer(1, __uuidof(ID3D12Resource), (void**)&_backBufferRenderTarget[1]);
-			_ASSERT(result >= 0);
-
 			auto renderTargetViewHandle = _renderTargetViewHeap->GetCPUDescriptorHandleForHeapStart();
 			UINT renderTargetViewDescriptorSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-			_device->CreateRenderTargetView(_backBufferRenderTarget[0], NULL, renderTargetViewHandle);
-			renderTargetViewHandle.ptr += renderTargetViewDescriptorSize;
-			_device->CreateRenderTargetView(_backBufferRenderTarget[1], NULL, renderTargetViewHandle);
+
+			for (int i = 0; i < NB_BUFFERS; ++i)
+			{
+				result = _swapChain->GetBuffer(i, __uuidof(ID3D12Resource), (void**)&_backBufferRenderTarget[i]);
+				_ASSERT(result >= 0);
+
+				_device->CreateRenderTargetView(_backBufferRenderTarget[i], NULL, renderTargetViewHandle);
+				renderTargetViewHandle.ptr += renderTargetViewDescriptorSize;
+
+				_fenceValue[i] = 1;
+			}
 		}
 
 		_rootSignature = eastl::unique_ptr<RootSignature>(new RootSignature(_device, {}));
 		_pipelineState = eastl::unique_ptr<PipelineState>(new PipelineState(_device, _rootSignature->rootSignature()));
 
-		// create command allocator and command list
-		for (int i = 0; i < 2; ++i)
-		{
-			result = _device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, __uuidof(ID3D12CommandAllocator), (void**)&_commandAllocator[i]);
-			_ASSERT(result >= 0);
-		}
-
-		result = _device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, _commandAllocator[_bufferIndex], NULL, __uuidof(ID3D12GraphicsCommandList), (void**)&_commandList);
-		_ASSERT(result >= 0);
-		result = _commandList->Close();
-		_ASSERT(result >= 0);
-
-		// create fence
-		result = _device->CreateFence(0, D3D12_FENCE_FLAG_NONE, __uuidof(ID3D12Fence), (void**)&_fence);
-		_ASSERT(result >= 0);
-
-		// create an event object for the fence.
-		_fenceEvent = CreateEventEx(NULL, FALSE, FALSE, EVENT_ALL_ACCESS);
-		_ASSERT(_fenceEvent != NULL);
-		_fenceValue[0] = _fenceValue[1] = 1;
-
 		for (const AdapterInfo& desc : adapters)
 			desc.adapter->Release();
 
+		auto mesh = tim::Geometry::generateCubeSphere(128, 1, true);
+		/*mesh.addVertex({ 0.2f,0.2f,0.2f });
+		mesh.addVertex({ 0.7f,0.7f,0.7f });
+		mesh.addVertex({ 0.2f,0.7f,0.2f });
+
+		mesh.addFace({ {0,1,2,0}, 3 });
+		*/
+
+		_vertexBufferTest.alloc(mesh.nbVertices(), sizeof(vec3));
+		void* ptr = _vertexBufferTest.map();
+		memcpy(ptr, mesh.vertexData(), sizeof(vec3)*mesh.nbVertices());
+		_vertexBufferTest.unmap();
+
+		auto indexBuffer = mesh.indexData();
+		std::cout << "nb triangle : " << indexBuffer.size()/3 << std::endl;
+		_indexBufferTest.alloc(indexBuffer.size(), sizeof(uint));
+		ptr = _indexBufferTest.map();
+		memcpy(ptr, indexBuffer.data(), sizeof(uint)*indexBuffer.size());
+		_indexBufferTest.unmap();
+
+		_vertexBufferTestGpu.alloc(mesh.nbVertices(), sizeof(vec3));
+		_indexBufferTestGpu.alloc(indexBuffer.size(), sizeof(uint));
+
+		_commandContext->copyBuffer(_vertexBufferTestGpu, _vertexBufferTest);
+		_commandContext->copyBuffer(_indexBufferTestGpu, _indexBufferTest);
+		_commandContext->flush(true);
+
+		//_vertexBufferTest.clear();
+		//_indexBufferTest.clear();
+		
 		return true;
 	}
 
 
 	void Renderer::render()
 	{
-		DebugTimer timer("Frame");
-
-		auto result = _commandAllocator[_bufferIndex]->Reset();
-		_ASSERT(result >= 0);
-
-		result = _commandList->Reset(_commandAllocator[_bufferIndex], nullptr);
-		_ASSERT(result >= 0);
+		//DebugTimer dfdf("asdads");
+		Chrono crono;
 
 		// start recording the command list
 
@@ -131,35 +138,59 @@ namespace dx12
 		barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
 		barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-		_commandList->ResourceBarrier(1, &barrier);
-
+		_commandContext->commandList()->ResourceBarrier(1, &barrier);
+		
 		// set the back buffer as the render targe
 		auto renderTargetViewHandle = _renderTargetViewHeap->GetCPUDescriptorHandleForHeapStart();
 		UINT renderTargetViewDescriptorSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 		renderTargetViewHandle.ptr += renderTargetViewDescriptorSize * _bufferIndex;
-		_commandList->OMSetRenderTargets(1, &renderTargetViewHandle, FALSE, nullptr);
+		_commandContext->commandList()->OMSetRenderTargets(1, &renderTargetViewHandle, FALSE, nullptr);
 
 		float color[2][4] = { { 0.3f, 0.5f, 1, 1 },{ 1, 0.5f, 1, 1 } };
-		_commandList->ClearRenderTargetView(renderTargetViewHandle, color[0], 0, nullptr);
+		_commandContext->commandList()->ClearRenderTargetView(renderTargetViewHandle, color[0], 0, nullptr);
 
+		_commandContext->commandList()->SetPipelineState(_pipelineState->getPipelineState());
+		_commandContext->commandList()->SetGraphicsRootSignature(_rootSignature->rootSignature());
+
+		CD3DX12_VIEWPORT viewport = CD3DX12_VIEWPORT( 0.0f, 0.0f, static_cast<float>(_rendererInfo.resolution.x()), static_cast<float>(_rendererInfo.resolution.y()) );
+		CD3DX12_RECT rect = CD3DX12_RECT( 0, 0, static_cast<LONG>(_rendererInfo.resolution.x()), static_cast<LONG>(_rendererInfo.resolution.y()) );
+		_commandContext->commandList()->RSSetViewports(1, &viewport);
+		_commandContext->commandList()->RSSetScissorRects(1, &rect);
+
+		_commandContext->commandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		_commandContext->commandList()->IASetVertexBuffers(0, 1, &_vertexBufferTestGpu.vertexBufferView());
+		_commandContext->commandList()->IASetIndexBuffer(&_indexBufferTestGpu.indexBufferView());
+		_commandContext->commandList()->DrawIndexedInstanced(_indexBufferTestGpu.elemCount(), 1, 0, 0, 0);
+		_commandContext->commandList()->DrawInstanced(_vertexBufferTest.elemCount(), 1, 0, 0);
+		
 		barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
 		barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
-		_commandList->ResourceBarrier(1, &barrier);
+		_commandContext->commandList()->ResourceBarrier(1, &barrier);
 
-		result = _commandList->Close();
-		_ASSERT(result >= 0);
+		static int numFrame = 0;
+		static float frameTime = 0;
 
-		ID3D12CommandList* commandLists[1];
-		commandLists[0] = _commandList;
-		_commandQueue->ExecuteCommandLists(1, commandLists);
-
+		_fenceValue[_bufferIndex] = _commandContext->flush(false, true);
+		
+		HRESULT result;
 		if (_rendererInfo.vsync)
-			_swapChain->Present(1, 0);
+			result = _swapChain->Present(1, 0);
 		else
 			result = _swapChain->Present(0, 0);
+
 		_ASSERT(result >= 0);
 
-		moveToNextFrame();
+		_bufferIndex = (_bufferIndex + 1) % NB_BUFFERS;
+		_commandQueueManager->waitForFence(_fenceValue[_bufferIndex]);
+
+		frameTime += float(crono.elapsed().to_secs());
+		numFrame++;
+		if (numFrame % 500 == 0)
+		{
+			std::cout << (numFrame / frameTime) << " fps\n";
+			frameTime = 0;
+			numFrame = 0;
+		}
 	}
 
 
@@ -178,26 +209,21 @@ namespace dx12
 
 	void Renderer::close()
 	{
-		waitFrame();
+		_commandQueueManager->sync();
 
 		if (_swapChain)
 			_swapChain->SetFullscreenState(false, nullptr);
-
-		CloseHandle(_fenceEvent);
-
-		Release(_fence);
-		Release(_commandList);
-		for (int i = 0; i < 2; ++i)
-			Release(_commandAllocator[i]);
-
-		Release(_fence);
 
 		for (int i = 0; i < 2; ++i)
 			Release(_backBufferRenderTarget[i]);
 
 		Release(_renderTargetViewHeap);
 		Release(_swapChain);
-		Release(_commandQueue);
+
+		_commandQueueManager.release();
+		_pipelineState.release();
+		_rootSignature.release();
+
 		Release(_device);
 	}
 
@@ -305,49 +331,13 @@ namespace dx12
 		swapChainDesc.Flags = 0;// info.fullscreen ? 0 : DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
 
 		IDXGISwapChain* swapChain;
-		factory->CreateSwapChain(_commandQueue, &swapChainDesc, &swapChain);
+		factory->CreateSwapChain(_commandQueueManager->commandQueue(CommandQueue::DIRECT).queue(), &swapChainDesc, &swapChain);
 		swapChain->QueryInterface(__uuidof(IDXGISwapChain3), (void**)&_swapChain);
 		_bufferIndex = _swapChain->GetCurrentBackBufferIndex();
 
 		factory->Release();
 		delete[] displayModeList;
 		adapterOutput->Release();
-	}
-
-	void Renderer::moveToNextFrame()
-	{
-		const auto fenceValue = _fenceValue[_bufferIndex];
-
-		// ask the queue to signal the fence when finished rendering
-		auto result = _commandQueue->Signal(_fence, fenceValue);
-		_ASSERT(result >= 0);
-
-		_bufferIndex = (_bufferIndex + 1) % 2;
-
-		// wait until the GPU is done rendering
-		if (_fence->GetCompletedValue() < _fenceValue[_bufferIndex])
-		{
-			result = _fence->SetEventOnCompletion(_fenceValue[_bufferIndex], _fenceEvent);
-			_ASSERT(result >= 0);
-			WaitForSingleObject(_fenceEvent, INFINITE);
-		}
-
-		_fenceValue[_bufferIndex] = fenceValue + 1;
-	}
-
-	void Renderer::waitFrame()
-	{
-		// ask the queue to signal the fance when finished
-		auto result = _commandQueue->Signal(_fence, _fenceValue[_bufferIndex]);
-		_ASSERT(result >= 0);
-
-		// wait until the fence is signaled
-		result = _fence->SetEventOnCompletion(_fenceValue[_bufferIndex], _fenceEvent);
-		_ASSERT(result >= 0);
-
-		WaitForSingleObject(_fenceEvent, INFINITE);
-
-		_fenceValue[_bufferIndex]++;
 	}
 
 	void Renderer::enableDebugLayer() const

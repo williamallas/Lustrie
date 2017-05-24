@@ -286,6 +286,20 @@ void BaseMesh::clearFaces()
     _faces.clear();
 }
 
+eastl::vector<uint> BaseMesh::indexData() const
+{
+	eastl::vector<uint> data;
+	data.reserve(_faces.size() * 3);
+
+	for (const auto& f : _faces)
+	{
+		if (f.nbIndexes >= 3)
+			data.insert(data.end(), f.indexes.begin(), f.indexes.begin() + 3);
+	}
+
+	return data;
+}
+
 /* Mesh */
 
 Mesh::Mesh(const BaseMesh& mesh) : BaseMesh(mesh) {}

@@ -11,7 +11,7 @@ namespace dx12
 	PipelineState::PipelineState(ID3D12Device* device, ID3D12RootSignature* rootSignature)
 	{
 		DX12InputLayout inLayout;
-		inLayout.initAsFloatVectors({ { "VERTEX", 3 }, { "NORMAL", 3 } });
+		inLayout.initAsFloatVectors({ { "VERTEX", 3 } });
 
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = {};
 		initDefaultDesc(desc, inLayout);
@@ -67,7 +67,7 @@ namespace dx12
 
 		desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 
-		desc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
+		desc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
 		desc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
 		desc.RasterizerState.FrontCounterClockwise = FALSE;
 		desc.RasterizerState.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;

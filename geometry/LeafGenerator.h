@@ -15,9 +15,9 @@ namespace tim
         struct Parameter
         {
             uint resX = 8;
-            vec2 size = {1, 0.5};
-            float innerCurvature = 0.1;
-            float outerCurvature = 0.2;
+            vec2 size = {1, 0.5f};
+            float innerCurvature = 0.1f;
+            float outerCurvature = 0.2f;
             float curvature = 0;
             bool triangulate = true;
             bool smoothAlongY = true;

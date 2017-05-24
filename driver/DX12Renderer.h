@@ -1,21 +1,20 @@
 #pragma once
 
-#include <d3d12.h>
-#include <dxgi1_4.h>
-#include <wrl.h>
+#include "DX12.h"
 
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3dcompiler.lib")
 
-#include <EASTL/vector.h>
-#include <EASTL/string.h>
 #include <EASTL/unique_ptr.h>
 #include <core/NonCopyable.h>
 #include "RendererStruct.h"
 
 #include "DX12PipelineState.h"
 #include "DX12RootSignature.h"
+#include "DX12CommandQueue.h"
+#include "DX12CommandList.h"
+#include "DX12Resource.h"
 
 namespace dx12
 {
@@ -38,22 +37,25 @@ namespace dx12
 
 		InitRendererInfo _rendererInfo;
 		ID3D12Device* _device = nullptr;
-		ID3D12CommandQueue* _commandQueue;
 
+		static const int NB_BUFFERS = 2;
 		IDXGISwapChain3* _swapChain;
 		ID3D12DescriptorHeap* _renderTargetViewHeap;
-		ID3D12Resource* _backBufferRenderTarget[2];
+		ID3D12Resource* _backBufferRenderTarget[NB_BUFFERS];
 		unsigned int _bufferIndex;
-
-		ID3D12CommandAllocator* _commandAllocator[2];
-		ID3D12GraphicsCommandList* _commandList;
 
 		eastl::unique_ptr<RootSignature> _rootSignature;
 		eastl::unique_ptr<PipelineState> _pipelineState;
 
-		ID3D12Fence* _fence;
-		HANDLE _fenceEvent;
-		unsigned long long _fenceValue[2];
+		eastl::unique_ptr<CommandQueueManager> _commandQueueManager;
+		eastl::unique_ptr<CommandContext> _commandContext;
+
+		CpuWritableBuffer _vertexBufferTest;
+		CpuWritableBuffer _indexBufferTest;
+		GpuBuffer _vertexBufferTestGpu;
+		GpuBuffer _indexBufferTestGpu;
+
+		unsigned long long _fenceValue[NB_BUFFERS];
 
 	private:
 		struct AdapterInfo
@@ -69,9 +71,6 @@ namespace dx12
 
 		void createSwapChain(int, const eastl::vector<AdapterInfo>&, const InitRendererInfo&);
 		void enableDebugLayer() const;
-
-		void moveToNextFrame();
-		void waitFrame();
 	};
 }
 

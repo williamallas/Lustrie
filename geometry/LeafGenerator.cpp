@@ -14,8 +14,8 @@ void LeafGenerator::generate(const Parameter& param)
 
     SampleFunction fun = leafFunction(param.leafType);
 
-    const uint resY = param.smoothAlongY ? 3:2;
-    uint startLine[resY];
+    uint resY = param.smoothAlongY ? 3:2;
+    eastl::vector<uint> startLine(resY);
 
     for(uint y=0 ; y<resY ; ++y)
     {
@@ -95,37 +95,37 @@ SampleFunction LeafGenerator::leafFunction(int choice)
     switch(choice)
     {
     case 0:
-        for(float x=0 ; x<=1 ; x += 0.1)
+        for(float x=0 ; x<=1 ; x += 0.1f)
             fun.addSample(1.2f * (x*(1 - x)));
 
     case 1:
         fun.addSample(0);
-        fun.addSample(0.16*3);
-        fun.addSample(0.24*3);
-        fun.addSample(0.28*3);
-        fun.addSample(0.3*3);
-        fun.addSample(0.3*3);
-        fun.addSample(0.26*3);
-        fun.addSample(0.16*3);
-        fun.addSample(0.07*3);
-        fun.addSample(0.055*3);
+        fun.addSample(0.16f*3);
+        fun.addSample(0.24f*3);
+        fun.addSample(0.28f*3);
+        fun.addSample(0.3f*3);
+        fun.addSample(0.3f*3);
+        fun.addSample(0.26f*3);
+        fun.addSample(0.16f*3);
+        fun.addSample(0.07f*3);
+        fun.addSample(0.055f*3);
         fun.addSample(0);
         break;
 
     case 2:
     default:
         fun.addSample(0);
-        fun.addSample(0.5);
-        fun.addSample(0.75);
-        fun.addSample(0.88);
+        fun.addSample(0.5f);
+        fun.addSample(0.75f);
+        fun.addSample(0.88f);
 
         for(int i=0 ; i<10 ; ++i)
             fun.addSample(1);
 
-        fun.addSample(0.92);
-        fun.addSample(0.80);
-        fun.addSample(0.6);
-        fun.addSample(0.3);
+        fun.addSample(0.92f);
+        fun.addSample(0.80f);
+        fun.addSample(0.6f);
+        fun.addSample(0.3f);
         fun.addSample(0);
         break;
     }

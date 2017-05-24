@@ -7,10 +7,16 @@
 
 
 int main(int, char*[]){
-	freopen("log.txt", "a", stderr);
+	FILE* file;
+	freopen_s(&file, "log.txt", "a", stderr);
 
 	System system;
 	system.run();
+
+	system.close();
+
+	std::cout << "Press enter to exit\n";
+	getchar();
     return 0;
 }
 

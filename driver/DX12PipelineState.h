@@ -1,11 +1,9 @@
 #pragma once
 
-#include <d3d12.h>
-#include <wrl.h>
+#include "DX12.h"
 #include <core/NonCopyable.h>
 #include <core/type.h>
-#include <EASTL/vector.h>
-#include <EASTL/string.h>
+
 
 #include "DX12InputLayout.h"
 #include "DX12RootSignature.h"

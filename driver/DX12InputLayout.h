@@ -1,8 +1,6 @@
 #pragma once
 
-#include <d3d12.h>
-#include <EASTL/vector.h>
-#include <EASTL/string.h>
+#include "DX12.h"
 
 namespace dx12
 {

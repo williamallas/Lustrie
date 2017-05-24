@@ -70,7 +70,7 @@ void System::openWindow(ivec2 resolution, bool fullScreen)
 	ApplicationHandle = this;
 
 	_hinstance = GetModuleHandle(NULL);
-	_applicationName = L"Dx12Test";
+	_applicationName = L"Lustrie";
 	_fullScreen = fullScreen;
 	_escapePressed = false;
 

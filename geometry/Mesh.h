@@ -46,6 +46,9 @@ namespace tim
         uint nbVertices() const;
         vec3 position(uint) const;
 
+		const vec3* vertexData() const;
+		eastl::vector<uint> indexData() const;
+
         void clearFaces();
         BaseMesh& addFace(const Face&);
 
@@ -78,6 +81,7 @@ namespace tim
 
     inline BaseMesh& BaseMesh::addFace(const Face& face) { _faces.push_back(face); return *this; }
     inline uint BaseMesh::nbVertices() const { return _vertices.size(); }
+	inline const vec3* BaseMesh::vertexData() const { return _vertices.data(); }
 
     template<class T> BaseMesh& BaseMesh::mapVertices(const T& tr)
     {

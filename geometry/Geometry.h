@@ -12,6 +12,7 @@ struct Geometry
     static MeshType generateCubeSphere(uint resolution, float radius=1, bool triangulate = false)
     {
         MeshType plan = MeshType::generateGrid(vec2(1,1), {resolution, resolution}, ImageAlgorithm<float>(), 0, triangulate);
+		//plan.invertFaces();
         MeshType result;
 
         result += plan.translated(vec3(0,0,0.5));

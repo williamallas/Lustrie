@@ -1,13 +1,18 @@
+#include "DX12.h"
+
 #define MULTILINE(...) #__VA_ARGS__
 
 namespace dx12
 {
+	ID3D12Device* g_device = nullptr;
+
+	CommandQueueManager* g_commandQueues = nullptr;
+
 	const char* g_shaderSrc = R"(
 
 	struct VertexShaderInput 
 	{ 
 		float3 vertex : VERTEX; 
-		float3 normal : NORMAL; 
 	};
 
 	struct PixelShaderInput 
@@ -18,7 +23,7 @@ namespace dx12
 	PixelShaderInput vs_main(VertexShaderInput input)
 	{
 		PixelShaderInput output;
-		output.position = float4(input.vertex+input.normal, 1);
+		output.position = float4(input.vertex, 1);
 		return output;
 	}
 

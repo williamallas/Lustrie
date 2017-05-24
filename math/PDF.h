@@ -41,7 +41,7 @@ public:
 
     TruncatedGaussianPDF(Vector2<T> range) : _range(range)
     {
-        _mean =  (_range.x() + _range.y()) * 0.5;
+        _mean =  (_range.x() + _range.y()) * 0.5f;
         _sigma = (_range.y() - _range.x());
     }
 
