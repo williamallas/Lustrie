@@ -39,11 +39,19 @@ class Quaternion {
                 }
 
                 Vector<T,3> axis() const {
-                        return Vector<T,3>(_quat.template to<3>() / std::sqrt(T(1) - w() * w()));
+#ifdef USE_VISUAL
+                        return Vector<T,3>(_quat.to<3>() / std::sqrt(T(1) - w() * w()));
+#else
+						return Vector<T, 3>(_quat.template to<3>() / std::sqrt(T(1) - w() * w()));
+#endif
                 }
 
                 Quaternion inverse() const {
-                        return Quaternion(-_quat.template to<3>(), _quat.w());
+#ifdef USE_VISUAL
+						return Quaternion(-_quat.to<3>(), _quat.w());
+#else
+						return Quaternion(-_quat.template to<3>(), _quat.w());
+#endif
                 }
 
                 explicit operator Vector<T,4>() const {
@@ -51,7 +59,11 @@ class Quaternion {
                 }
 
                 Vector<T,3> operator()(const Vector<T,3>& v) const {
-                        Vector<T,3> u = _quat.template to<3>();
+#ifdef USE_VISUAL
+                        Vector<T,3> u = _quat.to<3>();
+#else
+						Vector<T, 3> u = _quat.template to<3>();
+#endif
                         return u * T(2) * u.dot(v)
                                   + v * (w() * w() - u.length2())
                                   + u.cross(v) * T(2) * w();

@@ -1,8 +1,9 @@
 #include "System.h"
+#include <Windowsx.h>
 
 using namespace tim;
 
-System::System()
+System::System() : _game(_eventManager)
 {
 	init();
 }
@@ -22,8 +23,10 @@ void System::run()
 	bool done = false;
 	while (!done && _isInit)
 	{
+		_eventManager.update();
+
 		// handle the windows messages
-		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+		while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
 		{
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
@@ -34,8 +37,8 @@ void System::run()
 
 		if (msg.message == WM_QUIT)
 			done = true;
-
-		_graphics.frame();
+		
+		_game.update();
 	}
 
 	return;
@@ -47,7 +50,7 @@ void System::close()
 	if (_isInit)
 	{
 		_isInit = false;
-		_graphics.close();
+		_game.close();
 		closeWindow();
 	}
 }
@@ -59,7 +62,7 @@ bool System::init()
 	const ivec2 RESOLUTION = { 1280,720 };
 	openWindow(RESOLUTION, FULLSCREEN);
 
-	_isInit = _graphics.init(RESOLUTION, FULLSCREEN, _hwnd);
+	_isInit = _game.init(RESOLUTION, FULLSCREEN, _hwnd);
 
 	return _isInit;
 }
@@ -70,7 +73,7 @@ void System::openWindow(ivec2 resolution, bool fullScreen)
 	ApplicationHandle = this;
 
 	_hinstance = GetModuleHandle(NULL);
-	_applicationName = L"Lustrie";
+	_applicationName = "Lustrie";
 	_fullScreen = fullScreen;
 	_escapePressed = false;
 
@@ -113,6 +116,7 @@ void System::openWindow(ivec2 resolution, bool fullScreen)
 	ShowWindow(_hwnd, SW_SHOW);
 	SetForegroundWindow(_hwnd);
 	SetFocus(_hwnd);
+	SetCapture(_hwnd);
 }
 
 
@@ -145,6 +149,41 @@ LRESULT CALLBACK System::MessageHandler(HWND hwnd, UINT umsg, WPARAM wparam, LPA
 	case WM_KEYDOWN:
 		if (wparam == VK_ESCAPE)
 			_escapePressed = true;
+
+		_eventManager.setKeyPressed(wparam);
+		return 0;
+
+	case WM_KEYUP:
+		_eventManager.setKeyReleased(wparam);
+		return 0;
+	
+	case WM_MOUSEMOVE:
+	{
+		auto xPos = GET_X_LPARAM(lparam);
+		auto yPos = GET_Y_LPARAM(lparam);
+		_eventManager.setMousePos({ (int)xPos, (int)yPos });
+		/*if (xPos < 100 || xPos > 1000 || yPos < 100 || yPos > 600)
+		{
+			_eventManager.setMousePos({ 500, 300 }, false);
+			SetCursorPos(500, 300);
+		}*/
+		return 0;
+	}
+
+	case WM_LBUTTONDOWN:
+		_eventManager.setMousePressed(0);
+		return 0;
+
+	case WM_RBUTTONDOWN:
+		_eventManager.setMousePressed(1);
+		return 0;
+
+	case WM_LBUTTONUP:
+		_eventManager.setMouseReleased(0);
+		return 0;
+
+	case WM_RBUTTONUP:
+		_eventManager.setMouseReleased(1);
 		return 0;
 
 	default: 

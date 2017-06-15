@@ -44,10 +44,14 @@ namespace tim
         template<class T> BaseMesh& mapNormals(const T&);
 
         uint nbVertices() const;
+		uint nbFaces() const;
         vec3 position(uint) const;
 
 		const vec3* vertexData() const;
 		eastl::vector<uint> indexData() const;
+
+		size_t requestBufferSize(bool withNormal = true, bool withUv = false) const;
+		void fillBuffer(void*, bool withNormal = true, bool withUv = false) const;
 
         void clearFaces();
         BaseMesh& addFace(const Face&);
@@ -56,9 +60,11 @@ namespace tim
 
         void exportToObj(eastl::string) const;
 
-        BaseMesh& computeNormals(bool correctSeems = true);
+        BaseMesh& computeNormals(bool correctSeems = true, int smooth = 0);
         BaseMesh& invertNormals();
         BaseMesh& invertFaces();
+
+		static void computeJoinNormals(eastl::vector<BaseMesh*>&, int smooth = 0);
 		
     protected:
 		eastl::vector<vec3> _vertices;
@@ -81,6 +87,7 @@ namespace tim
 
     inline BaseMesh& BaseMesh::addFace(const Face& face) { _faces.push_back(face); return *this; }
     inline uint BaseMesh::nbVertices() const { return _vertices.size(); }
+	inline uint BaseMesh::nbFaces() const { return _faces.size(); }
 	inline const vec3* BaseMesh::vertexData() const { return _vertices.data(); }
 
     template<class T> BaseMesh& BaseMesh::mapVertices(const T& tr)

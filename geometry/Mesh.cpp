@@ -128,7 +128,7 @@ void BaseMesh::exportToObj(string filename) const
     }
 }
 
-BaseMesh& BaseMesh::computeNormals(bool correctSeems)
+BaseMesh& BaseMesh::computeNormals(bool correctSeems, int smooth)
 {
     _normals.clear();
     _normals.resize(_vertices.size());
@@ -144,6 +144,39 @@ BaseMesh& BaseMesh::computeNormals(bool correctSeems)
         if(n != vec3(0,0,0))
             _normals[i] = n.normalized();
     }
+
+	if (smooth > 0)
+	{
+		eastl::vector<vec3> tmpNormals(_vertices.size());
+		for (int s = 0; s < smooth; ++s)
+		{
+			for (size_t i = 0; i < _vertices.size(); ++i)
+			{
+				vec3 n = _normals[i]; uint nb = 1;
+				for (uint faceIndex : _vertexToFaces[i])
+				{
+					if (_faces[faceIndex].nbIndexes >= 3)
+					{
+						if(i != _faces[faceIndex].indexes[0])
+							n += _normals[_faces[faceIndex].indexes[0]];
+
+						if (i != _faces[faceIndex].indexes[1])
+							n += _normals[_faces[faceIndex].indexes[1]];
+
+						if (i != _faces[faceIndex].indexes[2])
+							n += _normals[_faces[faceIndex].indexes[2]];
+
+						nb += 2;
+					}
+				}
+
+				n /= float(nb);
+				tmpNormals[i] = n.normalized();
+			}
+
+			eastl::swap(_normals, tmpNormals);
+		}
+	}
 
     return *this;
 }
@@ -165,6 +198,44 @@ BaseMesh& BaseMesh::invertFaces()
     }
 
     return *this;
+}
+
+size_t BaseMesh::requestBufferSize(bool withNormal, bool withUv) const
+{
+	size_t res = nbVertices() * sizeof(vec3);
+	if(withNormal && !_normals.empty())
+		res += nbVertices() * sizeof(vec3);
+	if (withUv && !_normals.empty())
+		res += nbVertices() * sizeof(vec2);
+
+	return res;
+}
+
+void BaseMesh::fillBuffer(void* ptr, bool withNormal, bool withUv) const
+{
+	size_t stride = sizeof(vec3) + ((withNormal && !_normals.empty()) ? sizeof(vec3) : 0) + ((withUv && !_texCoords.empty()) ? sizeof(vec2) : 0);
+	byte* bptr = (byte*)ptr;
+
+	for (size_t i = 0; i < nbVertices(); ++i)
+	{
+		size_t offset = 0;
+		memcpy(bptr + offset, &_vertices[i], sizeof(vec3));
+		offset += sizeof(vec3);
+
+		if (withNormal && !_normals.empty())
+		{
+			memcpy(bptr + offset, &_normals[i], sizeof(vec3));
+			offset += sizeof(vec3);
+		}
+
+		if (withUv && !_texCoords.empty())
+		{
+			memcpy(bptr + offset, &_texCoords[i], sizeof(vec2));
+			offset += sizeof(vec2);
+		}
+
+		bptr += stride;
+	}
 }
 
 namespace
@@ -298,6 +369,25 @@ eastl::vector<uint> BaseMesh::indexData() const
 	}
 
 	return data;
+}
+
+void BaseMesh::computeJoinNormals(eastl::vector<BaseMesh*>& meshs, int smooth)
+{
+	BaseMesh joined;
+	for (auto m : meshs)
+		joined += *m;
+
+	joined.computeNormals(true, smooth);
+
+	size_t counter = 0;
+	for (size_t i = 0; i < meshs.size(); ++i)
+	{
+		meshs[i]->_normals.resize(meshs[i]->nbVertices());
+		for (size_t j = 0; j < meshs[i]->nbVertices(); ++j)
+			meshs[i]->_normals[j] = joined._normals[j + counter];
+
+		counter += meshs[i]->nbVertices();
+	}
 }
 
 /* Mesh */

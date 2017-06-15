@@ -2,9 +2,8 @@
 
 #include <Windows.h>
 
-#include "Graphics.h"
+#include "LustrieCore.h"
 #include "core/NonCopyable.h"
-#include "math/Vector.h"
 
 class System : NonCopyable
 {
@@ -24,14 +23,15 @@ private:
 	void closeWindow();
 
 private:
-	LPCWSTR _applicationName;
+	LPCSTR _applicationName;
 	HINSTANCE _hinstance;
 	HWND _hwnd;
 	bool _fullScreen;
 	bool _escapePressed = false;
 	bool _isInit = false;
+	EventManager _eventManager;
 
-	Graphics _graphics;
+	LustrieCore _game;
 };
 
 static System* ApplicationHandle = 0;
