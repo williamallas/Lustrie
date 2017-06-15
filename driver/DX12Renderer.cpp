@@ -1,6 +1,6 @@
 
 #include "DX12Renderer.h"
-#include "Chrono.h"
+#include <core/Chrono.h>
 #include <d3dcompiler.h>
 #include "core/Logger.h"
 
@@ -8,6 +8,10 @@
 #include "DX12.h"
 
 #include <geometry\Geometry.h>
+#include "graphics/Material.h"
+#include "graphics/MeshBuffers.h"
+#include <geometry\LTree.h>
+
 
 using namespace eastl;
 using namespace tim;
@@ -17,6 +21,7 @@ namespace dx12
 {
 	Renderer::~Renderer()
 	{
+
 	}
 
 
@@ -42,8 +47,8 @@ namespace dx12
 		auto result = D3D12CreateDevice(selectedAdapter, D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device), (void**)&_device);
 		if (FAILED(result))
 		{
-			MessageBox(_rendererInfo.windowHandle, L"Could not create a DirectX 12.0 device.  The default video card does not support DirectX 12.0.",
-				L"DirectX Device Failure", MB_OK);
+			MessageBox(_rendererInfo.windowHandle, "Could not create a DirectX 12.0 device.  The default video card does not support DirectX 12.0.",
+				"DirectX Device Failure", MB_OK);
 			return false;
 		}
 
@@ -52,81 +57,41 @@ namespace dx12
 		_commandQueueManager = eastl::make_unique<CommandQueueManager>(_device);
 		g_commandQueues = _commandQueueManager.get();
 
-		_commandContext = eastl::make_unique<CommandContext>(CommandQueue::DIRECT);
+		_commandContext = static_cast<GraphicsCommandContext*>(&CommandContext::AllocContext(CommandQueue::DIRECT));
 
 		// create swap chain
 		createSwapChain(NB_BUFFERS, adapters, info);
 		_bufferIndex = 0;
 
-		// create render target view
+		for (int i = 0; i < NB_BUFFERS; ++i)
 		{
-			D3D12_DESCRIPTOR_HEAP_DESC desc;
-			desc.NumDescriptors = NB_BUFFERS;
-			desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-			desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-			desc.NodeMask = 0;
-			result = _device->CreateDescriptorHeap(&desc, __uuidof(ID3D12DescriptorHeap), (void**)&_renderTargetViewHeap);
+			result = _swapChain->GetBuffer(i, __uuidof(ID3D12Resource), (void**)&_backBufferRenderTarget[i]);
 			_ASSERT(result >= 0);
 
-			auto renderTargetViewHandle = _renderTargetViewHeap->GetCPUDescriptorHandleForHeapStart();
-			UINT renderTargetViewDescriptorSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+			_backBufferDescriptors[i] = g_descriptorsPool[D3D12_DESCRIPTOR_HEAP_TYPE_RTV].alloc(1);
+			_device->CreateRenderTargetView(_backBufferRenderTarget[i], NULL, _backBufferDescriptors[i].cpuHandle());
+			_fenceValue[i] = 1;
 
-			for (int i = 0; i < NB_BUFFERS; ++i)
-			{
-				result = _swapChain->GetBuffer(i, __uuidof(ID3D12Resource), (void**)&_backBufferRenderTarget[i]);
-				_ASSERT(result >= 0);
-
-				_device->CreateRenderTargetView(_backBufferRenderTarget[i], NULL, renderTargetViewHandle);
-				renderTargetViewHandle.ptr += renderTargetViewDescriptorSize;
-
-				_fenceValue[i] = 1;
-			}
+			_depthBuffers[i].create({ (unsigned int)info.resolution[0], (unsigned int)info.resolution[1] });
 		}
-
-		_rootSignature = eastl::unique_ptr<RootSignature>(new RootSignature(_device, {}));
-		_pipelineState = eastl::unique_ptr<PipelineState>(new PipelineState(_device, _rootSignature->rootSignature()));
-
+		
 		for (const AdapterInfo& desc : adapters)
 			desc.adapter->Release();
 
-		auto mesh = tim::Geometry::generateCubeSphere(128, 1, true);
-		/*mesh.addVertex({ 0.2f,0.2f,0.2f });
-		mesh.addVertex({ 0.7f,0.7f,0.7f });
-		mesh.addVertex({ 0.2f,0.7f,0.2f });
-
-		mesh.addFace({ {0,1,2,0}, 3 });
-		*/
-
-		_vertexBufferTest.alloc(mesh.nbVertices(), sizeof(vec3));
-		void* ptr = _vertexBufferTest.map();
-		memcpy(ptr, mesh.vertexData(), sizeof(vec3)*mesh.nbVertices());
-		_vertexBufferTest.unmap();
-
-		auto indexBuffer = mesh.indexData();
-		std::cout << "nb triangle : " << indexBuffer.size()/3 << std::endl;
-		_indexBufferTest.alloc(indexBuffer.size(), sizeof(uint));
-		ptr = _indexBufferTest.map();
-		memcpy(ptr, indexBuffer.data(), sizeof(uint)*indexBuffer.size());
-		_indexBufferTest.unmap();
-
-		_vertexBufferTestGpu.alloc(mesh.nbVertices(), sizeof(vec3));
-		_indexBufferTestGpu.alloc(indexBuffer.size(), sizeof(uint));
-
-		_commandContext->copyBuffer(_vertexBufferTestGpu, _vertexBufferTest);
-		_commandContext->copyBuffer(_indexBufferTestGpu, _indexBufferTest);
-		_commandContext->flush(true);
-
-		//_vertexBufferTest.clear();
-		//_indexBufferTest.clear();
+		for (int i = 0; i < NB_BUFFERS; ++i)
+		{
+			_frameConstantsBuffer[i].alloc(1, sizeof(FrameConstants));
+			_frameConstantsBufferPtr[i] = (FrameConstants*)_frameConstantsBuffer[i].map();
+		}
 		
 		return true;
 	}
 
 
-	void Renderer::render()
+	void Renderer::render(const tim::Camera& camera, const Material& material, const eastl::vector<MeshBuffers*>& meshs)
 	{
-		//DebugTimer dfdf("asdads");
-		Chrono crono;
+		_frameConstantsBufferPtr[_bufferIndex]->proj = mat4::Projection(camera.fov, _rendererInfo.resolution.x() / float(_rendererInfo.resolution.y()), 0.5f, 1000).transposed();
+		_frameConstantsBufferPtr[_bufferIndex]->view = mat4::View(camera.pos, camera.dir, camera.up).transposed();
 
 		// start recording the command list
 
@@ -139,18 +104,23 @@ namespace dx12
 		barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 		_commandContext->commandList()->ResourceBarrier(1, &barrier);
+
+		_commandContext->resourceBarrier(_depthBuffers[_bufferIndex], D3D12_RESOURCE_STATE_DEPTH_WRITE, true);
 		
+		_commandContext->commandList()->SetPipelineState(material._pipeline->getPipelineState());
+		_commandContext->commandList()->SetGraphicsRootSignature(material._signature->rootSignature());
+
 		// set the back buffer as the render targe
-		auto renderTargetViewHandle = _renderTargetViewHeap->GetCPUDescriptorHandleForHeapStart();
-		UINT renderTargetViewDescriptorSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-		renderTargetViewHandle.ptr += renderTargetViewDescriptorSize * _bufferIndex;
-		_commandContext->commandList()->OMSetRenderTargets(1, &renderTargetViewHandle, FALSE, nullptr);
+		D3D12_CPU_DESCRIPTOR_HANDLE targetBuffer[1];
+		D3D12_CPU_DESCRIPTOR_HANDLE depthBuffer[1];
+		targetBuffer[0] = _backBufferDescriptors[_bufferIndex].cpuHandle();
+		depthBuffer[0] = _depthBuffers[_bufferIndex].depthDSV().cpuHandle();
+		_commandContext->commandList()->OMSetRenderTargets(1, targetBuffer, FALSE, depthBuffer);
 
 		float color[2][4] = { { 0.3f, 0.5f, 1, 1 },{ 1, 0.5f, 1, 1 } };
-		_commandContext->commandList()->ClearRenderTargetView(renderTargetViewHandle, color[0], 0, nullptr);
-
-		_commandContext->commandList()->SetPipelineState(_pipelineState->getPipelineState());
-		_commandContext->commandList()->SetGraphicsRootSignature(_rootSignature->rootSignature());
+		_commandContext->commandList()->ClearRenderTargetView(targetBuffer[0], color[0], 0, nullptr);
+		_commandContext->commandList()->ClearDepthStencilView(depthBuffer[0], D3D12_CLEAR_FLAG_DEPTH, _depthBuffers[0].clearDepth(), 0, 0, nullptr);
+		_commandContext->setConstantBuffer(0, _frameConstantsBuffer[_bufferIndex].gpuVirtualAdress());
 
 		CD3DX12_VIEWPORT viewport = CD3DX12_VIEWPORT( 0.0f, 0.0f, static_cast<float>(_rendererInfo.resolution.x()), static_cast<float>(_rendererInfo.resolution.y()) );
 		CD3DX12_RECT rect = CD3DX12_RECT( 0, 0, static_cast<LONG>(_rendererInfo.resolution.x()), static_cast<LONG>(_rendererInfo.resolution.y()) );
@@ -158,17 +128,20 @@ namespace dx12
 		_commandContext->commandList()->RSSetScissorRects(1, &rect);
 
 		_commandContext->commandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		_commandContext->commandList()->IASetVertexBuffers(0, 1, &_vertexBufferTestGpu.vertexBufferView());
-		_commandContext->commandList()->IASetIndexBuffer(&_indexBufferTestGpu.indexBufferView());
-		_commandContext->commandList()->DrawIndexedInstanced(_indexBufferTestGpu.elemCount(), 1, 0, 0, 0);
-		_commandContext->commandList()->DrawInstanced(_vertexBufferTest.elemCount(), 1, 0, 0);
+
+		for (size_t i = 0; i < meshs.size(); ++i)
+		{
+			_commandContext->commandList()->IASetVertexBuffers(0, 1, &meshs[i]->vb()->vertexBufferView());
+			_commandContext->commandList()->IASetIndexBuffer(&meshs[i]->ib()->indexBufferView());
+			_commandContext->commandList()->DrawIndexedInstanced(meshs[i]->numIndices() >= 0 ? uint32_t(meshs[i]->numIndices()) : meshs[i]->ib()->elemCount(),
+																1, meshs[i]->offset(), 0, 0);
+		}
+		//_commandContext->commandList()->DrawInstanced(_vertexBufferTestGpu.elemCount(), 1, 0, 0);
 		
 		barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
 		barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
 		_commandContext->commandList()->ResourceBarrier(1, &barrier);
-
-		static int numFrame = 0;
-		static float frameTime = 0;
+		_commandContext->resourceBarrier(_depthBuffers[_bufferIndex], D3D12_RESOURCE_STATE_COMMON, true);
 
 		_fenceValue[_bufferIndex] = _commandContext->flush(false, true);
 		
@@ -182,15 +155,6 @@ namespace dx12
 
 		_bufferIndex = (_bufferIndex + 1) % NB_BUFFERS;
 		_commandQueueManager->waitForFence(_fenceValue[_bufferIndex]);
-
-		frameTime += float(crono.elapsed().to_secs());
-		numFrame++;
-		if (numFrame % 500 == 0)
-		{
-			std::cout << (numFrame / frameTime) << " fps\n";
-			frameTime = 0;
-			numFrame = 0;
-		}
 	}
 
 
@@ -209,7 +173,10 @@ namespace dx12
 
 	void Renderer::close()
 	{
+		_commandContext->finish(true);
+		_commandContext = nullptr;
 		_commandQueueManager->sync();
+		CommandContext::destroyAllContexts();
 
 		if (_swapChain)
 			_swapChain->SetFullscreenState(false, nullptr);
@@ -217,12 +184,9 @@ namespace dx12
 		for (int i = 0; i < 2; ++i)
 			Release(_backBufferRenderTarget[i]);
 
-		Release(_renderTargetViewHeap);
 		Release(_swapChain);
 
 		_commandQueueManager.release();
-		_pipelineState.release();
-		_rootSignature.release();
 
 		Release(_device);
 	}

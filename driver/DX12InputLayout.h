@@ -12,26 +12,46 @@ namespace dx12
 		void initAsFloatVectors(const eastl::vector<eastl::pair<eastl::string, UINT>>& layout) // (name , num float)
 		{
 			clear();
+			UINT stride = 0;
 
 			for (auto elem : layout)
 			{
 				D3D12_INPUT_ELEMENT_DESC desc;
 				desc.SemanticName = NULL; // setup later
 				desc.SemanticIndex = 0;
+				desc.AlignedByteOffset = stride; // in buffer stride
 
 				switch (elem.second)
 				{
-				case 1: desc.Format = DXGI_FORMAT_R32_FLOAT; break;
-				case 2: desc.Format = DXGI_FORMAT_R32G32_FLOAT; break;
-				case 3: desc.Format = DXGI_FORMAT_R32G32B32_FLOAT; break;
-				case 4: desc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT; break;
-				default: desc.Format = DXGI_FORMAT_R32G32B32_FLOAT; break;
+				case 1: 
+					desc.Format = DXGI_FORMAT_R32_FLOAT; 
+					stride += 4;
+					break;
+
+				case 2: 
+					desc.Format = DXGI_FORMAT_R32G32_FLOAT; 
+					stride += 8;
+					break;
+
+				case 3: 
+					desc.Format = DXGI_FORMAT_R32G32B32_FLOAT; 
+					stride += 12;
+					break;
+
+				case 4: 
+					desc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT; 
+					stride += 16;
+					break;
+
+				default: 
+					desc.Format = DXGI_FORMAT_R32G32B32_FLOAT; 
+					stride += 12;
+					break;
 				}
 
 				desc.InputSlot = 0; // vertex buffer slot
-				desc.AlignedByteOffset = 0; // in buffer stride
 				desc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
-				desc.InstanceDataStepRate = 0;
+				desc.InstanceDataStepRate = 0; 
 				
 				
 				_layout.push_back(desc);

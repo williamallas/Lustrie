@@ -27,11 +27,11 @@ namespace dx12
 				param._param.ParameterType = (D3D12_ROOT_PARAMETER_TYPE)0xFFFFFFFF;
 			}
 
-			void setAsConstant(UINT registre, UINT value, D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY_ALL)
+			void setAsConstants(UINT registre, UINT numWords, D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY_ALL)
 			{
 				_param.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
 				_param.ShaderVisibility = visibility;
-				_param.Constants.Num32BitValues = value;
+				_param.Constants.Num32BitValues = numWords;
 				_param.Constants.ShaderRegister = registre;
 				_param.Constants.RegisterSpace = 0;
 			}

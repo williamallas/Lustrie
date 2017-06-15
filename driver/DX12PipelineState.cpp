@@ -8,18 +8,16 @@ using Microsoft::WRL::ComPtr;
 
 namespace dx12
 {
-	PipelineState::PipelineState(ID3D12Device* device, ID3D12RootSignature* rootSignature)
+	PipelineState::PipelineState(ID3D12Device* device, ID3D12RootSignature* rootSignature, DX12InputLayout& inLayout, 
+		const eastl::string& shaderSrc, const ForwardPipelineParam& param)
 	{
-		DX12InputLayout inLayout;
-		inLayout.initAsFloatVectors({ { "VERTEX", 3 } });
-
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = {};
-		initDefaultDesc(desc, inLayout);
+		initDesc(desc, inLayout, param);
 
 		desc.pRootSignature = rootSignature;
 
-		Shader vShader = Renderer::compileShader(g_shaderSrc, ShaderType::VERTEX, "vs_main");
-		Shader pShader = Renderer::compileShader(g_shaderSrc, ShaderType::PIXEL, "ps_main");
+		Shader vShader = Renderer::compileShader(shaderSrc, ShaderType::VERTEX, "vs_main");
+		Shader pShader = Renderer::compileShader(shaderSrc, ShaderType::PIXEL, "ps_main");
 
 		if (vShader)
 		{
@@ -37,11 +35,14 @@ namespace dx12
 		_ASSERT(SUCCEEDED(res));
 	}
 
-	void PipelineState::initDefaultDesc(D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc, const DX12InputLayout& inputLayout)
+	void PipelineState::initDesc(D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc, const DX12InputLayout& inputLayout, const ForwardPipelineParam& param)
 	{
 		desc.pRootSignature = NULL;
 		desc.DepthStencilState.StencilEnable = FALSE;
-		desc.DepthStencilState.DepthEnable = FALSE;
+		desc.DepthStencilState.DepthEnable = TRUE; 
+		desc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+		desc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+		desc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 		
 		desc.InputLayout.NumElements = inputLayout.getNum();
 		desc.InputLayout.pInputElementDescs = inputLayout.getLayout();
@@ -60,15 +61,15 @@ namespace dx12
 		desc.SampleMask = UINT_MAX;
 
 		desc.NumRenderTargets = 1;
-		desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+		desc.RTVFormats[0] = param.hdr ? DXGI_FORMAT_R16G16B16A16_FLOAT : DXGI_FORMAT_R8G8B8A8_UNORM;
 
 		desc.SampleDesc.Count = 1; // no msaa
 		desc.SampleDesc.Quality = 0;
 
 		desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 
-		desc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
-		desc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
+		desc.RasterizerState.FillMode = param.wireframe ? D3D12_FILL_MODE_WIREFRAME:D3D12_FILL_MODE_SOLID;
+		desc.RasterizerState.CullMode = param.cullFace ? D3D12_CULL_MODE_BACK : D3D12_CULL_MODE_NONE;
 		desc.RasterizerState.FrontCounterClockwise = FALSE;
 		desc.RasterizerState.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
 		desc.RasterizerState.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;

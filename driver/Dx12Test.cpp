@@ -3,7 +3,7 @@
 
 #define D3DCOMPILE_DEBUG 1
 
-#include "System.h"
+#include "graphics/System.h"
 
 
 int main(int, char*[]){

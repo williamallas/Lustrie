@@ -19,3 +19,9 @@ namespace dx12
 
 	extern const char* g_shaderSrc;
 }
+
+#define D3D12_GPU_VIRTUAL_ADDRESS_NULL 0ull
+#define D3D12_GPU_VIRTUAL_ADDRESS_UNKNOWN ~0ull
+
+#define D3D12_CPU_VIRTUAL_ADDRESS_NULL 0
+#define D3D12_CPU_VIRTUAL_ADDRESS_UNKNOWN ~0

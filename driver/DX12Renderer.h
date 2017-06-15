@@ -8,13 +8,20 @@
 
 #include <EASTL/unique_ptr.h>
 #include <core/NonCopyable.h>
-#include "RendererStruct.h"
+#include <graphics/RendererStruct.h>
+#include <math/Matrix.h>
+#include <math/Camera.h>
 
 #include "DX12PipelineState.h"
 #include "DX12RootSignature.h"
 #include "DX12CommandQueue.h"
 #include "DX12CommandList.h"
 #include "DX12Resource.h"
+#include "DX12DescriptorAllocator.h"
+#include "DX12TextureBuffer.h"
+
+class Material;
+class MeshBuffers;
 
 namespace dx12
 {
@@ -27,10 +34,12 @@ namespace dx12
 		~Renderer();
 
 		bool init(const InitRendererInfo&);
-		void render();
+		void render(const tim::Camera&, const Material&, const eastl::vector<MeshBuffers*>&);
 		void close();
 
 		static Shader compileShader(eastl::string src, ShaderType, eastl::string entryPoint = "main");
+
+		ID3D12Device* device() const { return _device; }
 
 	private:
 		friend class PipelineState;
@@ -40,20 +49,23 @@ namespace dx12
 
 		static const int NB_BUFFERS = 2;
 		IDXGISwapChain3* _swapChain;
-		ID3D12DescriptorHeap* _renderTargetViewHeap;
 		ID3D12Resource* _backBufferRenderTarget[NB_BUFFERS];
 		unsigned int _bufferIndex;
 
-		eastl::unique_ptr<RootSignature> _rootSignature;
-		eastl::unique_ptr<PipelineState> _pipelineState;
-
 		eastl::unique_ptr<CommandQueueManager> _commandQueueManager;
-		eastl::unique_ptr<CommandContext> _commandContext;
+		GraphicsCommandContext* _commandContext;
+		Descriptor _backBufferDescriptors[NB_BUFFERS];
 
-		CpuWritableBuffer _vertexBufferTest;
-		CpuWritableBuffer _indexBufferTest;
-		GpuBuffer _vertexBufferTestGpu;
-		GpuBuffer _indexBufferTestGpu;
+		DepthBuffer _depthBuffers[NB_BUFFERS];
+
+		struct FrameConstants
+		{
+			tim::mat4 view;
+			tim::mat4 proj;
+		};
+
+		CpuWritableBuffer _frameConstantsBuffer[NB_BUFFERS];
+		FrameConstants* _frameConstantsBufferPtr[NB_BUFFERS] = { nullptr, nullptr };
 
 		unsigned long long _fenceValue[NB_BUFFERS];
 

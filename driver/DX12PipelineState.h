@@ -15,7 +15,14 @@ namespace dx12
 	class PipelineState : NonCopyable
 	{
 	public:
-		PipelineState(ID3D12Device* device, ID3D12RootSignature*);
+		struct ForwardPipelineParam
+		{
+			bool wireframe = false;
+			bool hdr = false;
+			bool cullFace = true;
+		};
+
+		PipelineState(ID3D12Device* device, ID3D12RootSignature*, DX12InputLayout&, const eastl::string& shaderSrc, const ForwardPipelineParam&);
 
 		ID3D12PipelineState* getPipelineState() const { return _pipeline.Get(); }
 
@@ -23,6 +30,6 @@ namespace dx12
 		Microsoft::WRL::ComPtr<ID3D12PipelineState> _pipeline;
 
 	private:
-		static void initDefaultDesc(D3D12_GRAPHICS_PIPELINE_STATE_DESC&, const DX12InputLayout&);
+		static void initDesc(D3D12_GRAPHICS_PIPELINE_STATE_DESC&, const DX12InputLayout&, const ForwardPipelineParam&);
 	};
 }
