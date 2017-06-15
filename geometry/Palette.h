@@ -2,6 +2,8 @@
 
 #include <EASTL/array.h>
 #include "math/Vector.h"
+#undef min
+#undef max
 
 namespace tim
 {

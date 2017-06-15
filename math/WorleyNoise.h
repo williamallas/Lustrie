@@ -8,6 +8,14 @@
 #include <EASTL/deque.h>
 #include <EASTL/algorithm.h>
 
+#ifndef max
+#define max(a,b)            (((a) > (b)) ? (a) : (b))
+#endif
+
+#ifndef min
+#define min(a,b)            (((a) < (b)) ? (a) : (b))
+#endif
+
 namespace tim
 {
     template<class T>
@@ -77,16 +85,16 @@ namespace tim
         }
 
         int maxDepth = int(log2f(float(nbPoints)) / Point::Length + 0.5f);
-        maxDepth = eastl::min(8, eastl::max(0, maxDepth));
+        maxDepth = min(8, max(0, maxDepth));
         //std::cout << "maxdepth:" << maxDepth << " nbPts:" << nbPoints<<std::endl;
         optimiseSpace(_root, Point(0.5f), 0.5f, 0, maxDepth);
 
-        _sqrtNbPoints = powf(nbPoints, 1.f/Point::Length);
+        _sqrtNbPoints = powf(float(nbPoints), 1.f/float(Point::Length));
     }
 
     template<class T> float WorleyNoise<T>::noise(T x) const
     {
-        x.apply([](float val) { return modff(fabsf(val), nullptr); });
+        x.apply([](float val) { return fmodf(fabsf(val), 1.f); });
 
         float result=0;
         if(_root == nullptr)
@@ -103,7 +111,7 @@ namespace tim
         else
             result = search(x, _root, Point(0.5f), 0.5f, 0);
 
-        return eastl::min(result*_sqrtNbPoints, 1.f);
+        return min(result*_sqrtNbPoints, 1.f);
     }
 
     namespace
@@ -185,6 +193,7 @@ namespace tim
 
                 for(size_t i=0 ; i<node->container.size() ; ++i)
                 {
+					uint gg = node->container[i];
                     float dist = (_points[ node->container[i] ] - p).length2();
 
                     if(dist < size*size)

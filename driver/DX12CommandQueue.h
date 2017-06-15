@@ -11,7 +11,7 @@ namespace dx12
 	{
 		friend class CommandQueueManager;
 	public:
-		enum  CommandQueueType { DIRECT=0, COPY=1, COMPUTE=2 };
+		enum  CommandQueueType { DIRECT=0, COPY=1, COMPUTE=2, NUM_TYPE = 3 };
 
 		CommandQueue(ID3D12Device*, CommandQueueType);
 		~CommandQueue();

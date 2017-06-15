@@ -89,16 +89,16 @@ LTree::Node* LTree::generateBranchRec(const Parameter& param, Node* parent, vec3
 
     node->range.y() = node->range.x() + curveResolution;
 
-    vec3 localDir = (pointAtEnd - pointAtStart) / curveResolution;
+    vec3 localDir = (pointAtEnd - pointAtStart) / (float)curveResolution;
     float localDirLength = localDir.length();
 
     vec3 curPts = pointAtStart;
-    float tenseForceFactor = param.naturalBranchBending(_randEngine) * (!isTrunk ? 1 : 0.3);
+    float tenseForceFactor = param.naturalBranchBending(_randEngine) * (!isTrunk ? 1 : 0.3f);
 
     vec3 force = vec3(_random(_randEngine), _random(_randEngine), _random(_randEngine))-vec3(0.5,0.5,0.5);
 
     float sizeBranch = curveLength; // (pointAtEnd - pointAtStart).length();
-    Quat quat = Quat::from_axis_angle(localDir.cross(force).normalized(), sizeBranch * tenseForceFactor * 0.2);
+    Quat quat = Quat::from_axis_angle(localDir.cross(force).normalized(), sizeBranch * tenseForceFactor * 0.2f);
 
     for(int i=0 ; i<curveResolution ; ++i)
     {
@@ -187,7 +187,7 @@ LTree::Node* LTree::generateBranchRec(const Parameter& param, Node* parent, vec3
         // create new extra branches
         {
         float nbBranchf = (isTrunk ? param.trunkBranchDensity:param.extraBranchDensity)(_randEngine) * (sizeBranch-param.extraBranchSpacing);
-        int nbBranch = int(nbBranchf) + (_random(_randEngine) < modf(nbBranchf, nullptr) ? 1:0);
+        int nbBranch = int(nbBranchf) + (_random(_randEngine) < fmodf(nbBranchf, 1) ? 1:0);
         eastl::vector<vec2> alreadyCreatedBranch;
 
         GenParam newGenParam = detailParam;
@@ -293,7 +293,7 @@ uint LTree::generateLeafRec(const LeafParameter& leaf, Node* node, Mesh& acc) co
     if(!node->child || depth <= leaf.depth)
     {
         float nbLeaff =  (node->curve->point(node->range.y())-node->curve->point(node->range.x())).length() * leaf.density(_randEngine);
-        int nbLeaf = int(nbLeaff) + (_random(_randEngine) < modf(nbLeaff, nullptr) ? 1:0);
+        int nbLeaf = int(nbLeaff) + (_random(_randEngine) < fmodf(nbLeaff, 1) ? 1:0);
         for(int i=0 ; i<nbLeaf ; ++i)
         {
             vec3 dir; float thickness;
@@ -340,7 +340,7 @@ vec3 LTree::sampleSubCurve(float sample, Curve& curve, uivec2 range, vec3& dir, 
 
     uint ix  = uint(x);
     uint ix2 = std::max<uint>(std::min<uint>(ix+1, range[1]), range[0]);
-    x = modf(x, nullptr);
+    x = fmodf(x, 1);
 
     dir = interpolate(curve.computeDirection(ix), curve.computeDirection(ix2), x);
     thickness = interpolate(curve.radius(ix), curve.radius(ix2), x);
@@ -365,14 +365,14 @@ LTree::Parameter LTree::Parameter::random(int seed)
     LTree::Parameter param;
     param.nbTrunkStep = std::geometric_distribution<int>(0.25)(gen);
     param.trunkAngle = detail.randGaussePDF(0, 30, 10);
-    param.trunkStepSize = detail.randGaussePDF(0.3, 3.0, 1);
-    param.trunkStepSizeDecay = detail.randGaussePDF(0.5, 1, 0.2);
+    param.trunkStepSize = detail.randGaussePDF(0.3f, 3.f, 1);
+    param.trunkStepSizeDecay = detail.randGaussePDF(0.5f, 1, 0.2f);
 
     param.depth = (gen() %  4) + 3;
-    param.curveResolution = 0.2;
+    param.curveResolution = 0.2f;
 
     param.branchAngle = detail.randGaussePDF(15, 70, 20);
-    param.firstBranchAngleCoef = detail.randGaussePDF(0, 1, 0.2);
+    param.firstBranchAngleCoef = detail.randGaussePDF(0, 1, 0.2f);
 
     param.branchSplitDensity = {random(gen), 1.f+random(gen), 1.f+random(gen)*1.5f, random(gen)};
     param.branchSplitNoise = LTree::GaussPDF({0.1f,0.9f})(gen);
@@ -383,19 +383,19 @@ LTree::Parameter LTree::Parameter::random(int seed)
 
 
     param.initialBranchSize = std::uniform_real_distribution<float>(0.5,2)(gen) * param.trunkStepSize(gen);
-    param.branchSizeDecay = detail.randGaussePDF(0.4, 1.f, 0.2);
-    param.branchSizeCoef = detail.randGaussePDF(0.5, 2, 0.5);
-    param.branchSizeStopThreshold = 0.1 + random(gen) * 0.1;
+    param.branchSizeDecay = detail.randGaussePDF(0.4f, 1.f, 0.2f);
+    param.branchSizeCoef = detail.randGaussePDF(0.5f, 2, 0.5f);
+    param.branchSizeStopThreshold = 0.1f + random(gen) * 0.1f;
 
     //param.trunkBranchRange = {0.3,1};
     //param.trunkBranchDensity = 0;
     //param.extraBranchDensity = 2;
     //param.extraBranchSpacing = 0.2;
 
-    param.branchJitter = detail.randGaussePDF(0, 0.1, 0.03);
-    param.naturalBranchBending = detail.randGaussePDF(0, 0.5, 0.1);
+    param.branchJitter = detail.randGaussePDF(0, 0.1f, 0.03f);
+    param.naturalBranchBending = detail.randGaussePDF(0, 0.5f, 0.1f);
 
-    param.curvatureForce = vec3(0, 0, LTree::GaussPDF(0, 0.5, {-2,2})(gen));
+    param.curvatureForce = vec3(0, 0, LTree::GaussPDF(0, 0.5f, {-2,2})(gen));
     param.curvatureThicknessResistance = vec2(0,1); // x=constante,y=quadratic
 
     return param;

@@ -200,7 +200,8 @@ namespace tim
         Vector<T,A> to() const
         {
             Vector<T,A> v;
-            for(size_t i=0 ; i<std::min(A,N) ; ++i) v[i]=_val[i];
+            for(size_t i=0 ; i<(A<N?A:N) ; ++i) 
+				v[i]=_val[i];
             return v;
         }
 
@@ -252,7 +253,7 @@ namespace tim
         {
             if(INDEX >= N) return;
 
-            for(size_t i=0 ; i<std::min(N-INDEX, NN) ; ++i)
+            for(size_t i=0 ; i < (((N-INDEX) < NN) ? (N - INDEX):NN); ++i)
                 _val[INDEX+i] = static_cast<T>(v[i]);
         }
 

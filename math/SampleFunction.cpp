@@ -43,7 +43,7 @@ float SampleFunction::operator()(float x) const
     uint x1 = eastl::min(uint(x), _samples.size()-1);
     uint x2 = eastl::min(uint(x+1), _samples.size()-1);
 
-    x = modf(x, nullptr);
+    x = fmodf(x, 1);
 
     return tim::interpolateCos(_samples[x1], _samples[x2], x);
 }

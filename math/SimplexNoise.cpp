@@ -63,9 +63,7 @@ float SimplexNoise2D::noise(vec2 v) const
          }
      }
 
-     // Add contributions from each corner to get the final noise value.
-     // The result is scaled to return values in the interval [-1,1].
-     return 70.0f * N.dot(1);
+     return (70.0f * N.dot(1) * 0.5f) + 0.5f;
 }
 
 // https://github.com/WardBenjamin/SimplexNoise/blob/master/SimplexNoise/Noise.cs
@@ -181,9 +179,7 @@ float SimplexNoise3D::noise(vec3 v) const
         n3 = t3 * t3 * grad(_perm[ii + 1 + _perm[jj + 1 + _perm[kk + 1]]], x3, y3, z3);
     }
 
-    // Add contributions from each corner to get the final noise value.
-    // The result is scaled to stay just inside [-1,1]
-    return 32.0f * (n0 + n1 + n2 + n3); // TODO: The scale factor is preliminary!
+    return (32.0f * (n0 + n1 + n2 + n3) * 0.5f * 2.f) + 0.5f; // TODO: The scale factor is preliminary!
 
     /*
 
