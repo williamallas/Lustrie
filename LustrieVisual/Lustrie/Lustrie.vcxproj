@@ -1,0 +1,246 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>15.0</VCProjectVersion>
+    <ProjectGuid>{0E21CE23-7969-44E5-A930-E5E9C0B0AB28}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>Lustrie</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>C:\Users\Williamallas\Documents\Prog\DirectX-Graphics-Samples-master\Libraries\D3DX12;C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.15063.0\shared;C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.15063.0\um;C:\Users\Williamallas\Documents\Prog\Lustrie.git\ThirdParty\EASTL-master\test\packages\EABase\include\Common;C:\Users\Williamallas\Documents\Prog\Lustrie.git\ThirdParty\EASTL-master\include;C:\Users\Williamallas\Documents\Prog\Lustrie.git;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>C:\Users\Williamallas\Documents\Prog\DirectX-Graphics-Samples-master\Libraries\D3DX12;C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.15063.0\shared;C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.15063.0\um;C:\Users\Williamallas\Documents\Prog\Lustrie.git\ThirdParty\EASTL-master\test\packages\EABase\include\Common;C:\Users\Williamallas\Documents\Prog\Lustrie.git\ThirdParty\EASTL-master\include;C:\Users\Williamallas\Documents\Prog\Lustrie.git;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;USE_VISUAL</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;USE_VISUAL</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\ControlCamera.h" />
+    <ClInclude Include="..\..\core\Chrono.h" />
+    <ClInclude Include="..\..\core\ctpl_stl.h" />
+    <ClInclude Include="..\..\core\ImageAlgorithm.h" />
+    <ClInclude Include="..\..\core\Logger.h" />
+    <ClInclude Include="..\..\core\NonCopyable.h" />
+    <ClInclude Include="..\..\core\Singleton.h" />
+    <ClInclude Include="..\..\core\type.h" />
+    <ClInclude Include="..\..\driver\DX12.h" />
+    <ClInclude Include="..\..\driver\DX12Allocator.h" />
+    <ClInclude Include="..\..\driver\DX12Buffer.h" />
+    <ClInclude Include="..\..\driver\DX12ColorBuffer.h" />
+    <ClInclude Include="..\..\driver\DX12CommandList.h" />
+    <ClInclude Include="..\..\driver\DX12CommandQueue.h" />
+    <ClInclude Include="..\..\driver\DX12InputLayout.h" />
+    <ClInclude Include="..\..\driver\DX12Renderer.h" />
+    <ClInclude Include="..\..\driver\DX12Resource.h" />
+    <ClInclude Include="..\..\driver\DX12RootSignature.h" />
+    <ClInclude Include="..\..\driver\DX12PipelineState.h" />
+    <ClInclude Include="..\..\driver\DX12Texture.h" />
+    <ClInclude Include="..\..\driver\DX12TextureBuffer.h" />
+    <ClInclude Include="..\..\driver\DX12DescriptorAllocator.h" />
+    <ClInclude Include="..\..\EventManager.h" />
+    <ClInclude Include="..\..\geometry\Curve.h" />
+    <ClInclude Include="..\..\geometry\Geometry.h" />
+    <ClInclude Include="..\..\geometry\LeafGenerator.h" />
+    <ClInclude Include="..\..\geometry\LTree.h" />
+    <ClInclude Include="..\..\geometry\Mesh.h" />
+    <ClInclude Include="..\..\geometry\Palette.h" />
+    <ClInclude Include="..\..\graphics\API.h" />
+    <ClInclude Include="..\..\graphics\Graphics.h" />
+    <ClInclude Include="..\..\graphics\Material.h" />
+    <ClInclude Include="..\..\graphics\MeshBuffers.h" />
+    <ClInclude Include="..\..\graphics\RendererStruct.h" />
+    <ClInclude Include="..\..\graphics\System.h" />
+    <ClInclude Include="..\..\graphics\TexturePool.h" />
+    <ClInclude Include="..\..\LustrieCore.h" />
+    <ClInclude Include="..\..\math\Camera.h" />
+    <ClInclude Include="..\..\math\extern\rtnorm.hpp" />
+    <ClInclude Include="..\..\math\FractalNoise.h" />
+    <ClInclude Include="..\..\math\Frustum.h" />
+    <ClInclude Include="..\..\math\math.h" />
+    <ClInclude Include="..\..\math\Matrix.h" />
+    <ClInclude Include="..\..\math\PascaleTriangle.h" />
+    <ClInclude Include="..\..\math\PDF.h" />
+    <ClInclude Include="..\..\math\PerlinNoise.h" />
+    <ClInclude Include="..\..\math\Plan.h" />
+    <ClInclude Include="..\..\math\Quaternion.h" />
+    <ClInclude Include="..\..\math\SampleFunction.h" />
+    <ClInclude Include="..\..\math\SimplexNoise.h" />
+    <ClInclude Include="..\..\math\Sphere.h" />
+    <ClInclude Include="..\..\math\Vector.h" />
+    <ClInclude Include="..\..\math\WorleyNoise.h" />
+    <ClInclude Include="..\..\Planet.h" />
+    <ClInclude Include="..\..\PlanetTextureManager.h" />
+    <ClInclude Include="..\..\TextureGenerator.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\core\memalloc.cpp" />
+    <ClCompile Include="..\..\driver\DX12.cpp" />
+    <ClCompile Include="..\..\driver\DX12Allocator.cpp" />
+    <ClCompile Include="..\..\driver\DX12Buffer.cpp" />
+    <ClCompile Include="..\..\driver\DX12ColorBuffer.cpp" />
+    <ClCompile Include="..\..\driver\DX12CommandList.cpp" />
+    <ClCompile Include="..\..\driver\DX12CommandQueue.cpp" />
+    <ClCompile Include="..\..\driver\DX12Renderer.cpp" />
+    <ClCompile Include="..\..\driver\DX12Resource.cpp" />
+    <ClCompile Include="..\..\driver\DX12RootSignature.cpp" />
+    <ClCompile Include="..\..\driver\Dx12Test.cpp" />
+    <ClCompile Include="..\..\driver\DX12PipelineState.cpp" />
+    <ClCompile Include="..\..\driver\DX12Texture.cpp" />
+    <ClCompile Include="..\..\driver\DX12TextureBuffer.cpp" />
+    <ClCompile Include="..\..\driver\DX12DescriptorAllocator.cpp" />
+    <ClCompile Include="..\..\geometry\Curve.cpp" />
+    <ClCompile Include="..\..\geometry\Geometry.cpp" />
+    <ClCompile Include="..\..\geometry\LeafGenerator.cpp" />
+    <ClCompile Include="..\..\geometry\LTree.cpp" />
+    <ClCompile Include="..\..\geometry\Mesh.cpp" />
+    <ClCompile Include="..\..\geometry\TreeParameterGenerator.cpp" />
+    <ClCompile Include="..\..\graphics\Graphics.cpp" />
+    <ClCompile Include="..\..\graphics\Material.cpp" />
+    <ClCompile Include="..\..\graphics\MeshBuffers.cpp" />
+    <ClCompile Include="..\..\graphics\System.cpp" />
+    <ClCompile Include="..\..\graphics\TexturePool.cpp" />
+    <ClCompile Include="..\..\LustrieCore.cpp" />
+    <ClCompile Include="..\..\math\extern\rtnorm.cpp" />
+    <ClCompile Include="..\..\math\Frustum.cpp" />
+    <ClCompile Include="..\..\math\PerlinNoise.cpp" />
+    <ClCompile Include="..\..\math\SampleFunction.cpp" />
+    <ClCompile Include="..\..\math\SimplexNoise.cpp" />
+    <ClCompile Include="..\..\math\Sphere.cpp" />
+    <ClCompile Include="..\..\Planet.cpp" />
+    <ClCompile Include="..\..\PlanetTextureManager.cpp" />
+    <ClCompile Include="..\..\TextureGenerator.cpp" />
+    <ClCompile Include="..\..\ThirdParty\EASTL-master\source\assert.cpp" />
+    <ClCompile Include="..\..\ThirdParty\EASTL-master\source\hashtable.cpp" />
+    <ClCompile Include="..\..\ThirdParty\EASTL-master\source\red_black_tree.cpp" />
+    <ClCompile Include="..\..\ThirdParty\EASTL-master\source\string.cpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
