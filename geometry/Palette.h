@@ -10,7 +10,7 @@ namespace tim
     class Palette
     {
     public:
-        Palette() { setColor(bvec4(0,0,0,1), 0).setColor(bvec4(1,1,1,1), 1).complete(); }
+        Palette() { setColor(bvec4(0,0,0, 255), 0).setColor(bvec4::construct(255), 1).complete(); }
         Palette(const Palette&) = default;
 
         Palette(bvec4 first, bvec4 last)

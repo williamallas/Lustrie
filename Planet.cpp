@@ -10,7 +10,7 @@ tim::vec3 Planet::computeUp(tim::vec3 pos)
 	return pos.normalized();
 }
 
-Planet::Planet(uint resolution, const Parameter& param) : _parameter(param), _noise(42, param)
+Planet::Planet(uint resolution, const Parameter& param, int seedIn) : _parameter(param), _noise(seedIn, param)
 {
 	g_threadPool.push([=](int thread_id) {
 		this->generateLowResGrid(resolution / 8);
@@ -73,8 +73,8 @@ void Planet::cull(const tim::Camera& camera, eastl::vector<MeshBuffers*>& visibl
 
 					vec3 ray = _planetSide[side].position(_grid[i][j][0][0].indexes[0]) -
 							   _planetSide[side].position(_grid[i][j][0].back().indexes[0]);
-					//std::cout << ray.length() << std::endl;
-					if (frust.collide(Sphere(center, 2*ray.length())))
+
+					if (frust.collide(Sphere(center, 3*ray.length())))
 						visibleBatch.push_back(&_planetMesh[side][i][j][distanceToLod((center-camera.pos).length())]);
 				}
 			}
@@ -108,7 +108,7 @@ void Planet::generateGrid(uint res)
         for (uint j = 0; j < res+1; ++j)
         {
             vec3 p = vec3(d*i, d*j, 0) - vec3(0.5, 0.5, 0);
-            vec2 uv(float(i) / (res-1), float(j) / (res-1));
+            vec2 uv(float(i) / res, float(j) / res);
             mesh.addVertex({p,uv});
 
 			indexGrid(i, j) = curIndex++;
@@ -120,11 +120,11 @@ void Planet::generateGrid(uint res)
         }
     }
 
-    _planetSide[SIDE_X] = mesh.rotated(mat3::RotationY(toRad(90))).translated(vec3(0.5,0,0));
-    _planetSide[SIDE_NX] = mesh.rotated(mat3::RotationY(toRad(-90))).translated(vec3(-0.5,0,0));
+    _planetSide[SIDE_X] = mesh.rotated(mat3(mat3::RotationY(toRad(90)) * mat3::RotationZ(toRad(0)))).translated(vec3(0.5,0,0));
+    _planetSide[SIDE_NX] = mesh.rotated(mat3(mat3::RotationY(toRad(-90)) * mat3::RotationZ(toRad(180)))).translated(vec3(-0.5,0,0));
 
-    _planetSide[SIDE_Y] = mesh.rotated(mat3::RotationX(toRad(-90))).translated(vec3(0,0.5,0));
-    _planetSide[SIDE_NY] = mesh.rotated(mat3::RotationX(toRad(90))).translated(vec3(0,-0.5,0));
+    _planetSide[SIDE_Y] = mesh.rotated(mat3(mat3::RotationX(toRad(-90)) * mat3::RotationZ(toRad(90)))).translated(vec3(0,0.5,0));
+    _planetSide[SIDE_NY] = mesh.rotated(mat3(mat3::RotationX(toRad(90)) * mat3::RotationZ(toRad(-90)))).translated(vec3(0,-0.5,0));
 
     _planetSide[SIDE_Z] = mesh.translated(vec3(0,0,0.5));
     _planetSide[SIDE_NZ] = mesh.rotated(mat3::RotationX(toRad(180))).translated(vec3(0,0,-0.5));
@@ -176,18 +176,16 @@ void Planet::generateBatchIndex(tim::uint res, bool triangulate)
 void Planet::generateLowResGrid(tim::uint res)
 {
 	UVMesh plan = UVMesh::generateGrid(vec2(1, 1), { res, res }, ImageAlgorithm<float>(), 0, true);
+	plan.invertFaces();
 
 	_planetSideLowRes[SIDE_Z] = plan.translated(vec3(0, 0, 0.5));
 	_planetSideLowRes[SIDE_NZ] = plan.translated(vec3(0, 0, 0.5)).scaled(vec3(1, 1, -1)).invertFaces();
 
-	_planetSideLowRes[SIDE_Y] = plan.rotated(mat3::RotationX(toRad(-90))).translated(vec3(0, 0.5, 0));
-	_planetSideLowRes[SIDE_NY] = plan.rotated(mat3::RotationX(toRad(90))).translated(vec3(0, -0.5, 0));
+	_planetSideLowRes[SIDE_Y] = plan.rotated(mat3(mat3::RotationX(toRad(-90)) * mat3::RotationZ(toRad(90)))).translated(vec3(0, 0.5, 0));
+	_planetSideLowRes[SIDE_NY] = plan.rotated(mat3(mat3::RotationX(toRad(90)) * mat3::RotationZ(toRad(-90)))).translated(vec3(0, -0.5, 0));
 
-	_planetSideLowRes[SIDE_X] = plan.rotated(mat3::RotationY(toRad(90))).translated(vec3(0.5, 0, 0));
-	_planetSideLowRes[SIDE_NX] = plan.rotated(mat3::RotationY(toRad(-90))).translated(vec3(-0.5, 0, 0));
-
-	for (int i = 0; i < NB_SIDE; ++i)
-		_planetSideLowRes[i] = _planetSideLowRes[i].invertFaces().computeNormals();
+	_planetSideLowRes[SIDE_X] = plan.rotated(mat3(mat3::RotationY(toRad(90)) * mat3::RotationZ(toRad(0)))).translated(vec3(0.5, 0, 0));
+	_planetSideLowRes[SIDE_NX] = plan.rotated(mat3(mat3::RotationY(toRad(-90)) * mat3::RotationZ(toRad(180)))).translated(vec3(-0.5, 0, 0));
 }
 
 tim::UVMesh Planet::generateMesh(vec3 pos) const

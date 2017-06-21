@@ -81,7 +81,7 @@ namespace tim
             {
                 vec3 mean = 0;
                 for(auto v : vec) mean += v;
-                mean /= vec.size();
+                mean /= (float)vec.size();
 
                 float result = 0;
                 for(auto v:  vec)

@@ -2,7 +2,7 @@
 
 class NonCopyable
 {
-public:
+protected:
 	NonCopyable() = default;
 
 private:

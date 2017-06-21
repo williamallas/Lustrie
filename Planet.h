@@ -33,7 +33,7 @@ public:
 		float largeCoefFloor = 0.02f, detailCoefFloor = 0.2f;
 	};
 
-	Planet(tim::uint, const Parameter& param = Parameter());
+	Planet(tim::uint, const Parameter& param = Parameter(), int seed = 7);
 
     template<class Noise> void applyNoise(const Noise&, float factor, int side = Planet::NB_SIDE);
 

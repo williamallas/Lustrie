@@ -243,7 +243,9 @@ namespace
     struct HashVec3
     {
         size_t operator()(const vec3& v) const
-        { return v.hash<3>(); }
+        { 
+			return v.hash<3>();
+		}
     };
 }
 

@@ -23,6 +23,7 @@ private:
 	Graphics _graphics;
 	ControlCamera _camera;
 
+	eastl::unique_ptr<Material> _material;
 	eastl::unique_ptr<Planet> _planet;
 
 	float _elapsed = 0.01f;

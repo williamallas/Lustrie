@@ -86,7 +86,7 @@ namespace tim
     template<class T>
     inline T interpolate(T a, T b, float x)
     {
-        return a*(1.f-x)+b*x;
+        return (T)(a*(1.f-x) + b*x);
     }
 
     template<class T>

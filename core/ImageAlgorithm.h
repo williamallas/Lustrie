@@ -59,6 +59,7 @@ namespace tim
 
         ImageAlgorithm resized(uivec2) const;
         ImageAlgorithm transformed(const imat2&) const;
+		ImageAlgorithm makeTilable() const;
 
         template<class F> void exportBMP(eastl::string, const F&) const; // expect a T -> bvec3 function
 
@@ -74,6 +75,8 @@ namespace tim
         T& safe_get(uivec2);
         const T& get(uivec2) const;
         T& get(uivec2);
+
+		ImageAlgorithm resized_up(uivec2) const;
 
         bool check(uivec2 v) const { return v.x() < _size.x() && v.y() < _size.y(); }
     };
@@ -362,6 +365,9 @@ namespace tim
     template <class T>
     ImageAlgorithm<T> ImageAlgorithm<T>::resized(uivec2 s) const
     {
+		if (s.x() > _size.x() && s.y() > _size.y())
+			return resized_up(s);
+
         if(s.x() == 0 || s.y() == 0 || (s == _size) || s.x() > _size.x() || s.y() > _size.y())
             return *this;
 
@@ -428,6 +434,19 @@ namespace tim
         return res;
     }
 
+	template <class T>
+	ImageAlgorithm<T> ImageAlgorithm<T>::resized_up(uivec2 res) const
+	{
+		ImageAlgorithm<T> img(res);
+
+		for (uint i = 0; i<res.x(); ++i)
+			for (uint j = 0; j < res.y(); ++j) {
+				img.set(i, j, clamp_get((int)(float(_size.x()) * (float(i) / float(res.x()))),
+									    (int)(float(_size.y()) * (float(j) / float(res.y())))));
+			}
+		return img;
+	}
+
     template <class T>
     ImageAlgorithm<T> ImageAlgorithm<T>::transformed(const imat2& m) const
     {
@@ -452,6 +471,61 @@ namespace tim
 
         return img;
     }
+
+	template <class T>
+	ImageAlgorithm<T> ImageAlgorithm<T>::makeTilable() const
+	{
+		const float POW = 1.f;
+		ImageAlgorithm<T> img(_size);
+		
+		for (uint i = 0; i < _size.x(); ++i) for (uint j = 0; j < _size.y(); ++j)
+		{
+			if (i < (_size.x() >> 1) && j < (_size.y() >> 1))
+			{
+				T opposite = get(i + (_size.x() >> 1), j + (_size.y() >> 1));
+
+				vec2 coordf = { float(i) / (_size.x() - 1), float(j) / (_size.y() - 1) };
+				coordf *= 2.f;
+
+				float nearestW, nearestB;
+				nearestW = eastl::min(coordf.x(), coordf.y());
+				nearestB = 1.f - eastl::max(coordf.x(), coordf.y());
+
+				if(coordf.x() + coordf.y() < 1)
+					//img.set(i, j, powf(nearestB / (nearestW + nearestB), POW) );
+					img.set(i, j, interpolate(get(i,j), opposite, powf(nearestB / (nearestW + nearestB), POW) ));
+				else
+					//img.set(i, j, 1.f - powf(nearestW / (nearestW + nearestB), POW) );
+					img.set(i, j, interpolate(opposite, get(i, j), powf(nearestW / (nearestW + nearestB), POW) ));
+			}
+			else if (i >= (_size.x() >> 1) && j >= (_size.y() >> 1))
+				img.set(i, j, img.get(i - (_size.x() >> 1), j - (_size.y() >> 1)));
+
+			else if (i < (_size.x() >> 1) && j >= (_size.y() >> 1))
+			{
+				uint ii = i, jj = _size.y() - j;
+				T opposite = get(i + (_size.x() >> 1), j - (_size.y() >> 1));
+
+				vec2 coordf = { float(ii) / (_size.x() - 1), float(jj) / (_size.y() - 1) };
+				coordf *= 2;
+				float nearestW, nearestB;
+				nearestW = eastl::min(coordf.x(), coordf.y());
+				nearestB = 1.f - eastl::max(coordf.x(), coordf.y());
+
+				if (coordf.x() + coordf.y() < 1)
+					img.set(i, j, interpolate(get(i, j), opposite, powf(nearestB / (nearestW + nearestB), POW)));
+					//img.set(i, j, powf(nearestB / (nearestW + nearestB), POW));
+				else
+				    img.set(i, j, interpolate(opposite, get(i, j), powf(nearestW / (nearestW + nearestB), POW)));
+					//img.set(i, j, 1.f-powf(nearestW / (nearestW + nearestB), POW));
+			}
+
+			else
+				img.set(i, j, img.get(i - (_size.x() >> 1), j + (_size.y() >> 1)));
+		}
+
+		return img;
+	}
 
     template <class T>
     template<class F>

@@ -17,6 +17,7 @@ public:
 	tim::ImageAlgorithm<tim::bvec4> genGroundTexture(tim::uint res);
 
 	tim::bvec4 randColor();
+	tim::vec4 randColorf();
 
 private:
 	int _seed;
