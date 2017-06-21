@@ -1,0 +1,7 @@
+/Debug/
+/Release/
+/x64/
+*.bmp
+/Lustrie.vcxproj.filters
+/Lustrie.vcxproj.user
+*.txt
