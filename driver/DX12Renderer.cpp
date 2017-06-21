@@ -83,10 +83,9 @@ namespace dx12
 			_frameConstantsBuffer[i].alloc(1, sizeof(FrameConstants));
 			_frameConstantsBufferPtr[i] = (FrameConstants*)_frameConstantsBuffer[i].map();
 		}
-		
+
 		return true;
 	}
-
 
 	void Renderer::render(const tim::Camera& camera, const Material& material, const eastl::vector<MeshBuffers*>& meshs)
 	{
@@ -109,6 +108,16 @@ namespace dx12
 		
 		_commandContext->commandList()->SetPipelineState(material._pipeline->getPipelineState());
 		_commandContext->commandList()->SetGraphicsRootSignature(material._signature->rootSignature());
+
+		auto pool = material.texturePool();
+		if (pool)
+		{
+			pool->lock();
+			ID3D12DescriptorHeap* heaps[] = { pool->getHeap().heapPtr() };
+			_commandContext->commandList()->SetDescriptorHeaps(1, heaps);
+			_commandContext->commandList()->SetGraphicsRootDescriptorTable(2, pool->_srvDescr[0].gpuHandle());
+			pool->unlock();
+		}
 
 		// set the back buffer as the render targe
 		D3D12_CPU_DESCRIPTOR_HANDLE targetBuffer[1];

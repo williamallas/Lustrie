@@ -8,6 +8,7 @@
 #include "Material.h"
 #include "MeshBuffers.h"
 #include "ControlCamera.h"
+#include "TexturePool.h"
 
 class Planet;
 
@@ -18,15 +19,17 @@ public:
 	~Graphics();
 
 	bool init(tim::ivec2, bool, HWND);
-	void frame(ControlCamera&, Planet&);
+	void frame(ControlCamera&, Material&, Planet&);
 	void close();
 
-	Material createForwardMaterial(bool cullFace = true, bool wireFrame = false);
+	//Material createForwardMaterial(bool cullFace = true, bool wireFrame = false);
+	Material createTexturedForwardMaterial(const char* shader, int numTextures = 16, 
+										   bool cullFace = true, bool wireFrame = false);
+
+	static ProxyTexture g_dummyTexture;
 
 private:
 	tim::ivec2 _screenResolution;
 	dx12::Renderer _renderer;
-
-	eastl::unique_ptr<Material> material;
 };
 

@@ -17,7 +17,9 @@ namespace dx12
 	class CommandQueueManager;
 	extern CommandQueueManager* g_commandQueues;
 
-	extern const char* g_shaderSrc;
+	extern const char* g_defaultShader;
+	extern const char* g_headerShader;
+	extern const char* g_planetShader;
 }
 
 #define D3D12_GPU_VIRTUAL_ADDRESS_NULL 0ull

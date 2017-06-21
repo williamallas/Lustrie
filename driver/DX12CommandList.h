@@ -4,6 +4,7 @@
 #include "DX12CommandQueue.h"
 #include <core/NonCopyable.h>
 #include "DX12Buffer.h"
+#include "DX12Texture.h"
 #include "DX12Allocator.h"
 
 #include <EASTL/unique_ptr.h>
@@ -35,6 +36,7 @@ namespace dx12
 		void copySubBuffer(Resource& dest, size_t destOffset, CpuWritableBuffer& src, size_t srcOffset, size_t numBytes);
 
 		void initBuffer(Resource& dest, const void* data, size_t numBytes, size_t offset = 0);
+		void initTexture(Texture& dest, const eastl::vector<D3D12_SUBRESOURCE_DATA>&);
 
 		DynAlloc allocWritableBuffer(size_t bytes);
 
