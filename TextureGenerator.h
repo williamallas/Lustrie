@@ -16,6 +16,7 @@ public:
 
 	tim::ImageAlgorithm<tim::bvec4> genGroundTexture(tim::uint res);
 
+	tim::Palette randPalette(tim::uivec2 nbColorRange = { 2,5 }, tim::uint saturatedFrom = 2);
 	tim::bvec4 randColor();
 	tim::vec4 randColorf();
 
