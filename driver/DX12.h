@@ -20,6 +20,7 @@ namespace dx12
 	extern const char* g_defaultShader;
 	extern const char* g_headerShader;
 	extern const char* g_planetShader;
+	extern const char* g_grassShader;
 }
 
 #define D3D12_GPU_VIRTUAL_ADDRESS_NULL 0ull

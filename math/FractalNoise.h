@@ -17,6 +17,8 @@ namespace tim
                 _layers.push_back(instancer(i));
         }
 
+		~FractalNoise() = default;
+
         float noise(typename Noise::Point v, eastl::function<float(float)> fun = eastl::function<float(float)>()) const
         {
             float res=0;

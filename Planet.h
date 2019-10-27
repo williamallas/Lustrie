@@ -13,24 +13,33 @@
 #include <core/ctpl_stl.h>
 extern ctpl::thread_pool g_threadPool;
 
+extern eastl::unique_ptr<tim::FractalNoise<tim::WorleyNoise<tim::vec3>>> g_fractalWorley3d;
+
 class Planet : NonCopyable
 {
 public:
+	static constexpr uint NB_SPLIT = 8;
+
 	struct Parameter
 	{
 		vec2 sizePlanet = { 100, 25 };
 		float largeRidgeCoef = 1;
-		float largeRidgeScale = 1;
+		float largeRidgeZScale = 1;
 		float largeExponent = 1;
 
 		float largeSimplexCoef = 1;
-		float largeSimplexScale = 0;
+		float largeSimplexZScale = 0;
+		bool invertWorley = true;
 
-		float simplexDetailCoef = 15;
-		float simplexDetailScale = 0.1f;
+		float largeWorleyCoef = 1;
+		float largeWorleyZScale = 0;
 
-		float floorHeight = 0.25f;
-		float largeCoefFloor = 0.02f, detailCoefFloor = 0.2f;
+		float simplexDetailCoef = 30;
+		float simplexDetailZScale = 0.02f;
+
+		float floorHeight = 0.3f;
+
+		static Parameter generate(int seed);
 	};
 
 	Planet(tim::uint, const Parameter& param = Parameter(), int seed = 7);
@@ -39,9 +48,16 @@ public:
 
     tim::UVMesh generateMesh(tim::vec3) const;
 
-	void cull(const tim::Camera&, eastl::vector<MeshBuffers*>&);
+	void cull(const tim::Camera&, eastl::vector<ObjectInstance>&);
 
 	tim::vec3 computeUp(tim::vec3 pos);
+
+	vec3 evalNoise(vec3) const;
+	vec3 evalNormal(vec3, float delta = 0.05f) const;
+	float isFloor(vec3) const;
+
+	const Parameter& parameter() const;
+	vec3 position() const;
 
 private:
 	vec3 _position;
@@ -57,7 +73,7 @@ private:
     tim::uint _gridResolution;
     eastl::vector<tim::uint> _gridIndex;
 
-	template <class T> using GridType = eastl::array<eastl::array<T, 8>, 8>;
+	template <class T> using GridType = eastl::array<eastl::array<T, NB_SPLIT>, NB_SPLIT>;
 	GridType< eastl::array<BatchInstance, NB_LODS> > _grid;
 
 	bool _isLowResReady = false;
@@ -90,42 +106,62 @@ private:
 		int seed;
 		float pFactor;
 
-		float ridgeFun(float x) { return 1.f - powf(fabsf(x * 2 - 1), parameter.largeExponent); };
+		float ridgeFun(float x) const { return 1.f - powf(fabsf(x * 2 - 1), parameter.largeExponent); };
 
 		/* The noise generators */
-		FractalNoise<SimplexNoise3D> noiseForRidge = FractalNoise<SimplexNoise3D>(3, SimplexNoiseInstancer<SimplexNoise3D>(parameter.largeRidgeCoef, 2, seed));
-		FractalNoise<SimplexNoise3D> noiseForSimplex = FractalNoise<SimplexNoise3D>(3, SimplexNoiseInstancer<SimplexNoise3D>(parameter.largeSimplexCoef, 2, seed+1));
+		FractalNoise<SimplexNoise3D> noiseForRidge = FractalNoise<SimplexNoise3D>(5, SimplexNoiseInstancer<SimplexNoise3D>(parameter.largeRidgeCoef, 2, seed));
+		FractalNoise<SimplexNoise3D> noiseForSimplex = FractalNoise<SimplexNoise3D>(5, SimplexNoiseInstancer<SimplexNoise3D>(parameter.largeSimplexCoef, 2, seed+1));
 		FractalNoise<SimplexNoise3D> simplexForDetails = FractalNoise<SimplexNoise3D>(3, SimplexNoiseInstancer<SimplexNoise3D>(parameter.simplexDetailCoef, 2, seed+2));
-		//FractalNoise<WorleyNoise<vec3>> worlNoise = FractalNoise<WorleyNoise<vec3>>(1, WorleyNoiseInstancer<WorleyNoise<vec3>>(5000, 5));
 
 		/* The noise composition */
-		float noiseFun(vec3 v) 
+		float noiseFun(vec3 v) const
 		{
-			v *= pFactor;
-			float large = parameter.largeRidgeScale * noiseForRidge.noise(v, [=](float x) { return ridgeFun(x); }) +
-						  parameter.largeSimplexScale * noiseForSimplex.noise(v);
-			large = powf(large, parameter.largeExponent);
+			float large = computeLarge(v);
 
-			float detail = parameter.simplexDetailScale * simplexForDetails.noise(v);
+			float detail = parameter.simplexDetailZScale * simplexForDetails.noise(v);
 
 			if (large < parameter.floorHeight)
-			{
-				large = parameter.floorHeight + large * parameter.largeCoefFloor;
-				large += parameter.simplexDetailScale * parameter.detailCoefFloor;
-				detail *= parameter.detailCoefFloor;
-			}
+				large = parameter.floorHeight;
 				
 			 return parameter.sizePlanet.x() + parameter.sizePlanet.y() * (large+detail);
 		};
 
-		eastl::function<float(vec3)> noiseFun()
+		float isFloor(vec3 v) const
+		{
+			float large = computeLarge(v);
+			return large < parameter.floorHeight ? 0 : (large - parameter.floorHeight)*parameter.sizePlanet.y();
+		};
+
+		eastl::function<float(vec3)> noiseFun() const
 		{
 			return [&](vec3 v) { return noiseFun(v); };
 		}
-	};
 
+	private:
+		float computeLarge(vec3 v) const
+		{
+			v *= pFactor;
+			float large = parameter.largeRidgeZScale * noiseForRidge.noise(v, [=](float x) { return ridgeFun(x); }) +
+				parameter.largeSimplexZScale * noiseForSimplex.noise(v);
+
+			if (parameter.largeWorleyZScale > 0)
+			{
+				float w = g_fractalWorley3d->noise(v * parameter.largeWorleyCoef);
+				if (parameter.invertWorley)
+					w = 1.f - w;
+
+				large += parameter.largeWorleyZScale * w;
+			}
+
+			return powf(large, parameter.largeExponent);
+		}
+
+	};
 	NoiseClosure _noise;
 };
+
+inline const Planet::Parameter& Planet::parameter() const { return _parameter; }
+inline vec3 Planet::position() const { return _position; }
 
 inline tim::uint Planet::indexGrid(tim::uint i,tim::uint j) const
 { return _gridIndex[j +  i*_gridResolution]; }

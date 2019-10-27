@@ -138,6 +138,9 @@ LTree::Node* LTree::generateBranchRec(const Parameter& param, Node* parent, vec3
     // split branchs
     if(detailParam.totalDepth+1 < param.depth && _random(_randEngine) > param.branchEarlyTermination[detailParam.totalDepth+1])
     {
+		if (isTrunk && float(detailParam.inBranchDepth+1) < param.trunkBranchRange.x())
+			return node;
+
         vec3 baseDir = node->curve->computeDirection(node->range.x());
         float theta = _random(_randEngine)*TAU;
         float phi = toRad(param.branchAngle(_randEngine) * (trunkContinue ? 1:param.firstBranchAngleCoef(_randEngine)));
@@ -347,86 +350,200 @@ vec3 LTree::sampleSubCurve(float sample, Curve& curve, uivec2 range, vec3& dir, 
     return interpolate(curve.point(ix), curve.point(ix2), x);
 }
 
-LTree::Parameter LTree::Parameter::random(int seed)
+namespace
 {
-    struct Detail
-    {
-        std::mt19937& gen;
-        std::uniform_real_distribution<float> random;
+	vec2 altereRange(vec2 range, float tr, float scale)
+	{
+		float med = (range[0] + range[1]) * 0.5f;
+		return ((range - med) * scale) + med + tr;
+	}
 
-        LTree::GaussPDF randGaussePDF(float a, float b, float var=0)
-        { return LTree::GaussPDF(interpolate(a+random(gen)*var, b-random(gen)*var, random(gen)), (b-a) * exp(-random(gen)*3), {a,b}); }
-    };
-
-    std::mt19937 gen(seed);
-    std::uniform_real_distribution<float> random(0,1);
-    Detail detail({gen, random});
-
-    LTree::Parameter param;
-    param.nbTrunkStep = std::geometric_distribution<int>(0.25)(gen);
-    param.trunkAngle = detail.randGaussePDF(0, 30, 10);
-    param.trunkStepSize = detail.randGaussePDF(0.3f, 3.f, 1);
-    param.trunkStepSizeDecay = detail.randGaussePDF(0.5f, 1, 0.2f);
-
-    param.depth = (gen() %  4) + 3;
-    param.curveResolution = 0.2f;
-
-    param.branchAngle = detail.randGaussePDF(15, 70, 20);
-    param.firstBranchAngleCoef = detail.randGaussePDF(0, 1, 0.2f);
-
-    param.branchSplitDensity = {random(gen), 1.f+random(gen), 1.f+random(gen)*1.5f, random(gen)};
-    param.branchSplitNoise = LTree::GaussPDF({0.1f,0.9f})(gen);
-
-    param.branchEarlyTermination.resize(param.depth);
-    for(size_t i=0 ; i<param.branchEarlyTermination.size() ; ++i)
-        param.branchEarlyTermination[i] = (int(i) <= param.depth/2 ? 0 : (i*random(gen)/param.depth));
-
-
-    param.initialBranchSize = std::uniform_real_distribution<float>(0.5,2)(gen) * param.trunkStepSize(gen);
-    param.branchSizeDecay = detail.randGaussePDF(0.4f, 1.f, 0.2f);
-    param.branchSizeCoef = detail.randGaussePDF(0.5f, 2, 0.5f);
-    param.branchSizeStopThreshold = 0.1f + random(gen) * 0.1f;
-
-    //param.trunkBranchRange = {0.3,1};
-    //param.trunkBranchDensity = 0;
-    //param.extraBranchDensity = 2;
-    //param.extraBranchSpacing = 0.2;
-
-    param.branchJitter = detail.randGaussePDF(0, 0.1f, 0.03f);
-    param.naturalBranchBending = detail.randGaussePDF(0, 0.5f, 0.1f);
-
-    param.curvatureForce = vec3(0, 0, LTree::GaussPDF(0, 0.5f, {-2,2})(gen));
-    param.curvatureThicknessResistance = vec2(0,1); // x=constante,y=quadratic
-
-    return param;
+	float genAround(float center, float size, float amount, float randf)
+	{
+		return (center - size*0.5f*amount) + randf*size*0.5f*amount;
+	}
 }
 
-/*
+LTree::Parameter& LTree::Parameter::alterate(int seed, float amount)
+{
+	amount = std::min(2.f, amount);
+	std::mt19937 gen(seed);
+	std::uniform_real_distribution<float> random(0, 1);
+	std::uniform_int_distribution<int> random_int(0, 2);
+
+	bool grow = gen() % 2 == 0;
+	int sign = grow ? 1 : -1;
+
+	nbTrunkStep += (static_cast<int>(random_int(gen)*sign*amount + 0.5f));
+	nbTrunkStep = std::max(1, nbTrunkStep);
+	
+	trunkAngle.translate_scale(genAround(0, 8, amount, random(gen)), genAround(1, 1, amount, random(gen))).makePositive();
+
+	trunkStepSize *= (1.f + random(gen) * amount * sign * 0.5f);
+	trunkStepSizeDecay.translate_scale(genAround(0, 0.15f, amount, random(gen)), genAround(1, 0.2f, amount, random(gen))).makePositive();
+
+	branchAngle.translate_scale(genAround(0, 30, amount, random(gen)), genAround(1, 0.8f, amount, random(gen))).makePositive();
+	
+	for (auto& c : branchSplitDensity)
+		c *= genAround(1, 1.75, amount, random(gen));
+
+	branchSplitNoise *= genAround(1, 1, amount, random(gen));
+
+	initialBranchSize *= (1 + sign*amount*0.5f*random(gen));
+	branchSizeDecay.translate_scale(genAround(0, 0.2f, amount, random(gen)), 1).makePositive();
+	branchSizeCoef.translate_scale(0, genAround(1, 0.3f, amount, random(gen))).makePositive();
+
+	trunkBranchRange[0] *= genAround(1, 0.5f, amount, random(gen));
+	trunkBranchRange[0] = std::min(float(nbTrunkStep)-0.1f, trunkBranchRange[0]),
+	trunkBranchDensity.translate_scale(genAround(0, 3, amount, random(gen)), genAround(1, 0.6f, amount, random(gen))).makePositive();
+	extraBranchDensity.translate_scale(genAround(0, 3, amount, random(gen)), genAround(1, 0.6f, amount, random(gen))).makePositive();
+
+	branchJitter.translate_scale(genAround(0, 0.2f, amount, random(gen)), genAround(1, 0.6f, amount, random(gen))).makePositive();
+	naturalBranchBending.translate_scale(genAround(0, 0.3f, amount, random(gen)), genAround(1, 0.6f, amount, random(gen)));
+
+	curvatureForce += vec3(genAround(0, 1, amount, random(gen)),
+						   genAround(0, 1, amount, random(gen)),
+		                   genAround(0, 1, amount, random(gen)));
+
+	curvatureThicknessResistance += vec2(genAround(0, 0.2f, amount, random(gen)), genAround(0, 0.2f, amount, random(gen)));
+
+	float thicknessCoef = genAround(1, 0.3f, amount, random(gen));
+	meshing.initialBranchThickness *= thicknessCoef;
+	meshing.trunkThickness *= thicknessCoef;
+
+	return *this;
+}
+
+
 void LTree::Parameter::print() const
 {
     std::cout << "nbTrunkStep=" << nbTrunkStep << std::endl;
-    std::cout << "trunkAngle=" << trunkAngle << std::endl;
-    std::cout << "trunkStepSize=" << trunkStepSize << std::endl;
-    std::cout << "trunkStepSizeDecay=" << trunkStepSizeDecay << std::endl;
+	std::cout << "trunkAngle="; trunkAngle.print(std::cout) << std::endl;
+	std::cout << "trunkStepSize="; trunkStepSize.print(std::cout) << std::endl;
+	std::cout << "trunkStepSizeDecay="; trunkStepSizeDecay.print(std::cout) << std::endl;
     std::cout << "depth=" << depth << std::endl;
     std::cout << "curveResolution=" << curveResolution << std::endl;
-    std::cout << "branchAngle=" << branchAngle << std::endl;
-    std::cout << "firstBranchAngleCoef=" << firstBranchAngleCoef << std::endl;
+	std::cout << "branchAngle=";  branchAngle.print(std::cout) << std::endl;
+	std::cout << "firstBranchAngleCoef="; firstBranchAngleCoef.print(std::cout) << std::endl;
     std::cout << "branchSplitNoise=" << branchSplitNoise << std::endl;
     std::cout << "initialBranchSize=" << initialBranchSize << std::endl;
-    std::cout << "branchSizeDecay=" << branchSizeDecay << std::endl;
-    std::cout << "branchSizeCoef=" << branchSizeCoef << std::endl;
+	std::cout << "branchSizeDecay=";  branchSizeDecay.print(std::cout) << std::endl;
+	std::cout << "branchSizeCoef=";  branchSizeCoef.print(std::cout) << std::endl;
     std::cout << "branchSizeStopThreshold=" << branchSizeStopThreshold << std::endl;
-    std::cout << "trunkBranchRange=" << trunkBranchDensity << std::endl;
-    std::cout << "trunkBranchDensity=" << trunkBranchDensity << std::endl;
-    std::cout << "extraBranchDensity=" << extraBranchDensity << std::endl;
+	std::cout << "trunkBranchRange=" << trunkBranchRange << std::endl;
+	std::cout << "trunkBranchDensity=";  trunkBranchDensity.print(std::cout) << std::endl;
+	std::cout << "extraBranchDensity=";  extraBranchDensity.print(std::cout) << std::endl;
     std::cout << "extraBranchSpacing=" << extraBranchSpacing << std::endl;
-    std::cout << "branchJitter=" << branchJitter << std::endl;
-    std::cout << "naturalBranchBending=" << naturalBranchBending << std::endl;
+	std::cout << "branchJitter="; branchJitter.print(std::cout) << std::endl;
+	std::cout << "naturalBranchBending=";  naturalBranchBending.print(std::cout) << std::endl;
     std::cout << "curvatureForce=" << curvatureForce[2] << std::endl;
     std::cout << "curvatureThicknessResistance=" << curvatureThicknessResistance << std::endl;
 }
-*/
 
+
+LTree::MeshingParameter& LTree::MeshingParameter::scale(float x)
+{
+	this->initialBranchThickness *= x;
+	this->trunkThickness *= x;
+	return *this;
+}
+
+LTree::MeshingParameter& LTree::MeshingParameter::scaleDecay(tim::vec2 coef)
+{
+	this->alongBranchThicknessDecay *= coef.y();
+	this->alongTrunkThicknessDecay *= coef.x();
+	this->branchThicknessDecay *= coef.y();
+	this->trunkThicknessDecay *= coef.x();
+	return *this;
+}
+
+LTree::MeshingParameter LTree::MeshingParameter::interpolate(const MeshingParameter& m1, const MeshingParameter& m2, float coef)
+{
+	MeshingParameter param;
+	param.alongBranchThicknessDecay = tim::interpolate(m1.alongBranchThicknessDecay, m2.alongBranchThicknessDecay, coef);
+	param.alongTrunkThicknessDecay = tim::interpolate(m1.alongTrunkThicknessDecay, m2.alongTrunkThicknessDecay, coef);
+	param.branchThicknessDecay = tim::interpolate(m1.branchThicknessDecay, m2.branchThicknessDecay, coef);
+	param.initialBranchThickness = tim::interpolate(m1.initialBranchThickness, m2.initialBranchThickness, coef);
+	param.trunkThickness = tim::interpolate(m1.trunkThickness, m2.trunkThickness, coef);
+	param.trunkThicknessDecay = tim::interpolate(m1.trunkThicknessDecay, m2.trunkThicknessDecay, coef);
+	return param;
+}
+
+eastl::vector<float> LTree::Parameter::interpolate(const eastl::vector<float>& v1, const eastl::vector<float>& v2, float coef)
+{
+	eastl::vector<float> v = v1.size() > v2.size() ? v1 : v2;
+	for (size_t i = 0; i < std::min(v1.size(), v2.size()); ++i)
+		v[i] = tim::interpolate(v1[i], v2[i], coef);
+
+	return v;
+}
+
+LTree::Parameter LTree::Parameter::interpolate(const Parameter& p1, const Parameter& p2, float coef)
+{
+	Parameter p;
+	p.branchAngle = GaussPDF::interpolate(p1.branchAngle, p2.branchAngle, coef);
+	p.branchEarlyTermination = interpolate(p1.branchEarlyTermination, p2.branchEarlyTermination, coef);
+
+	p.branchJitter = GaussPDF::interpolate(p1.branchJitter, p2.branchJitter, coef);
+	p.branchSizeAlongTrunk = SampleFunction::interpolate(p1.branchSizeAlongTrunk, p2.branchSizeAlongTrunk, coef);
+	p.branchSizeCoef = GaussPDF::interpolate(p1.branchSizeCoef, p2.branchSizeCoef, coef);
+	p.branchSizeDecay = GaussPDF::interpolate(p1.branchSizeDecay, p2.branchSizeDecay, coef);
+	p.branchSizeStopThreshold = tim::interpolate(p1.branchSizeStopThreshold, p2.branchSizeStopThreshold, coef);
+	p.branchSplitDensity = interpolate(p1.branchSplitDensity, p2.branchSplitDensity, coef);
+	p.branchSplitNoise = tim::interpolate(p1.branchSplitNoise, p2.branchSplitNoise, coef);
+	
+	p.curvatureForce = tim::interpolate(p1.curvatureForce, p2.curvatureForce, coef);
+	p.curvatureThicknessResistance = tim::interpolate(p1.curvatureThicknessResistance, p2.curvatureThicknessResistance, coef);
+	p.curveResolution = tim::interpolate(p1.curveResolution, p2.curveResolution, coef);
+	p.depth = int(tim::interpolate(float(p1.depth), float(p2.depth), coef) + 0.5f);
+	
+	p.extraBranchDensity = GaussPDF::interpolate(p1.extraBranchDensity, p2.extraBranchDensity, coef);
+	p.extraBranchSpacing = tim::interpolate(p1.extraBranchSpacing, p2.extraBranchSpacing, coef);
+	p.firstBranchAngleCoef = GaussPDF::interpolate(p1.firstBranchAngleCoef, p2.firstBranchAngleCoef, coef);
+	p.initialBranchSize = tim::interpolate(p1.initialBranchSize, p2.initialBranchSize, coef);
+	p.meshing = MeshingParameter::interpolate(p1.meshing, p2.meshing, coef);
+	p.naturalBranchBending = GaussPDF::interpolate(p1.naturalBranchBending, p2.naturalBranchBending, coef);
+	p.nbTrunkStep = int(tim::interpolate(float(p1.nbTrunkStep), float(p2.nbTrunkStep), coef) + 0.5f);
+	
+	p.trunkAngle = GaussPDF::interpolate(p1.trunkAngle, p2.trunkAngle, coef);
+	p.trunkBranchDensity = GaussPDF::interpolate(p1.trunkBranchDensity, p2.trunkBranchDensity, coef);
+	p.trunkBranchRange = tim::interpolate(p1.trunkBranchRange, p2.trunkBranchRange, coef);
+	p.trunkStepSize = GaussPDF::interpolate(p1.trunkStepSize, p2.trunkStepSize, coef);
+	p.trunkStepSizeDecay = GaussPDF::interpolate(p1.trunkStepSizeDecay, p2.trunkStepSizeDecay, coef);
+
+	return p;
+}
+
+LTree::LeafParameter LTree::LeafParameter::gen(int seed, int sizeCategorie)
+{
+	std::mt19937 gen(seed);
+	std::uniform_real_distribution<float> random(0, 1);
+
+	LeafParameter param;
+
+	param.depth = gen() % 3;
+	param.tilt = vec2(-PI / 3, PI / 3) * random(gen);
+	param.orientation = vec2(-PI / 2, PI / 2) * (0.5f + random(gen)*0.5f);
+
+	switch (sizeCategorie)
+	{
+	case 0:
+		param.scale = std::uniform_real_distribution<float>(0.1, 0.4)(gen);
+		param.density = std::uniform_real_distribution<float>(5, 10)(gen);
+		break;
+
+	case 1:
+		param.scale = std::uniform_real_distribution<float>(0.4, 0.7)(gen);
+		param.density = std::uniform_real_distribution<float>(3, 6)(gen);
+		break;
+
+	case 2:
+		param.scale = std::uniform_real_distribution<float>(0.7, 1.5)(gen);
+		param.density = std::uniform_real_distribution<float>(1,3)(gen);
+		break;
+	}
+
+	return param;
+}
 
 }

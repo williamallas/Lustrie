@@ -23,9 +23,14 @@ namespace tim
             vec2 trunkThicknessDecay = {0.75f,0.8f};
 
             vec2 alongBranchThicknessDecay = {0.7f, 0.9f};
-            //bool autoBranchThickness = false;
             vec2 initialBranchThickness = {0.08f, 0.08f};
             vec2 branchThicknessDecay = {0.7f,0.9f};
+
+			/* methods */
+			MeshingParameter& scale(float);
+			MeshingParameter& scaleDecay(tim::vec2);
+
+			static MeshingParameter interpolate(const MeshingParameter& m1, const MeshingParameter& m2, float);
         };
 
         struct Parameter
@@ -63,7 +68,11 @@ namespace tim
 
             MeshingParameter meshing;
 
-            static Parameter random(int seed=0);
+			/* methods */
+			Parameter& alterate(int seed, float amount = 1);
+
+			static eastl::vector<float> interpolate(const eastl::vector<float>&, const eastl::vector<float>&, float);
+			static Parameter interpolate(const Parameter&, const Parameter&, float);
             void print() const;
         };
 
@@ -75,6 +84,8 @@ namespace tim
             GaussPDF orientation = vec2(-PI/2, PI/2);
             GaussPDF tilt = vec2(-PI/4, PI/4);
             GaussPDF scale = 1;
+
+			static LeafParameter gen(int seed, int sizeCategorie);
         };
 
         LTree(Parameter, int seed=42);
@@ -91,8 +102,12 @@ namespace tim
         UVMesh generateUVMesh(int resolution = 8) const;
         Mesh generateLeaf(const LeafParameter&) const;
 
-        enum PredefinedTree { TREE_1, TREE_2, TREE_3 };
+        enum PredefinedTree { TREE_1, TREE_2, TREE_3, TREE_4,
+							  BIG_TREE1, BIG_TREE2, BIG_TREE3 };
         static Parameter getPredefinedTree(PredefinedTree);
+
+		enum PredefinedMeshing { SMALL, MEDIUM, BIG, VBIG };
+		static MeshingParameter getPredefinedMeshing(PredefinedMeshing);
 
     private:
         struct Node

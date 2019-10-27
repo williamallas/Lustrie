@@ -8,9 +8,9 @@ using namespace tim;
 
 namespace dx12
 {
-	Texture::Texture(uivec2 res, DXGI_FORMAT format, const byte* data)
+	Texture::Texture(uivec2 res, uint numMips, DXGI_FORMAT format, const byte* data)
 	{
-		create(res, format, data);
+		create(res, numMips, format, data);
 	}
 
 	namespace
@@ -18,9 +18,9 @@ namespace dx12
 		size_t bytesPerPixel(DXGI_FORMAT f) { return TextureBuffer::bitsPerPixel(f) / 8; }
 	};
 
-	void Texture::create(uivec2 res, DXGI_FORMAT format, const byte* data)
+	void Texture::create(uivec2 res, uint numMips, DXGI_FORMAT format, const byte* data)
 	{
-		D3D12_RESOURCE_DESC desc = describeTex2D(res, 1, 1, format, D3D12_RESOURCE_FLAG_NONE);
+		D3D12_RESOURCE_DESC desc = describeTex2D(res, 1, numMips, format, D3D12_RESOURCE_FLAG_NONE);
 		desc.Format = format;
 		TextureBuffer::create(g_device, desc, nullptr);
 
@@ -35,15 +35,24 @@ namespace dx12
 
 	void Texture::upload(const byte* data, uint64_t* fence)
 	{
-		CommandContext& commandlist = CommandContext::AllocContext(CommandQueue::DIRECT);
-		
-		eastl::vector<D3D12_SUBRESOURCE_DATA> res(1);
-		res[0].pData = data;
-		res[0].RowPitch = _size.x() * bytesPerPixel(_format);
-		res[0].SlicePitch = res[0].RowPitch * _size.y();
-		commandlist.initTexture(*this, res);
+		upload(eastl::vector<const byte*>(1, data), fence);
+	}
 
-		if(fence)
+	void Texture::upload(eastl::vector<const byte*> mips, uint64_t* fence)
+	{
+		CommandContext& commandlist = CommandContext::AllocContext(CommandQueue::COPY);
+
+		eastl::vector<D3D12_SUBRESOURCE_DATA> res(mips.size());
+		for (size_t i = 0; i < mips.size(); ++i)
+		{
+			res[i].pData = mips[i];
+			res[i].RowPitch = (_size.x() >> i) * bytesPerPixel(_format);
+			res[i].SlicePitch = res[i].RowPitch * (_size.y() >> i);
+		}
+
+		commandlist.initTexture(*this, res);
+		
+		if (fence)
 			*fence = commandlist.finish(false);
 		else
 			commandlist.finish(true);

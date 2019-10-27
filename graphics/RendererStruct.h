@@ -1,6 +1,7 @@
 #pragma once
 
 #include "math/Vector.h"
+#include "math/Matrix.h"
 #include <Windows.h>
 
 struct InitRendererInfo
@@ -12,3 +13,18 @@ struct InitRendererInfo
 };
 
 enum class ShaderType { VERTEX, PIXEL, GEOMETRY, COMPUTE };
+
+struct MaterialParameter
+{
+	tim::ivec4 textures;
+	tim::vec4 parameter;
+};
+
+class MeshBuffers;
+
+struct ObjectInstance
+{
+	MeshBuffers* mesh;
+	tim::mat4 tranform;
+	MaterialParameter parameter;
+};

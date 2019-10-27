@@ -34,7 +34,10 @@ namespace dx12
 		~Renderer();
 
 		bool init(const InitRendererInfo&);
-		void render(const tim::Camera&, const Material&, const eastl::vector<MeshBuffers*>&);
+
+		void beginRender(const tim::Camera& camera, float timeElapsed);
+		void render(const Material&, const eastl::vector<ObjectInstance>&);
+		void endRender();
 		void close();
 
 		static Shader compileShader(eastl::string src, ShaderType, eastl::string entryPoint = "main");
@@ -62,10 +65,29 @@ namespace dx12
 		{
 			tim::mat4 view;
 			tim::mat4 proj;
+			tim::mat4 projView;
+			tim::vec4 cameraPos_time;
 		};
 
+		// persistently mapped buffer
 		CpuWritableBuffer _frameConstantsBuffer[NB_BUFFERS];
 		FrameConstants* _frameConstantsBufferPtr[NB_BUFFERS] = { nullptr, nullptr };
+
+		// buffer for matrix and material, need several map unmap
+		struct InstanceConstants
+		{
+			tim::ivec4 textures;
+			tim::vec4 material;
+		};
+
+		static constexpr UINT64 MAX_INSTANCE = 1 << 14;
+
+		CpuWritableBuffer _matrixBuffers[NB_BUFFERS];
+		tim::mat4* _matrixBuffersPtr[NB_BUFFERS];
+
+		CpuWritableBuffer _materialBuffers[NB_BUFFERS];
+		InstanceConstants* _materialBuffersPtr[NB_BUFFERS];
+		size_t _indexInBuffer;
 
 		unsigned long long _fenceValue[NB_BUFFERS];
 

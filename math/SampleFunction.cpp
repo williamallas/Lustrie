@@ -45,7 +45,23 @@ float SampleFunction::operator()(float x) const
 
     x = fmodf(x, 1);
 
-    return tim::interpolateCos(_samples[x1], _samples[x2], x);
+    return tim::interpolate(_samples[x1], _samples[x2], x);
+}
+
+SampleFunction SampleFunction::interpolate(const SampleFunction& f1, const SampleFunction& f2, float coef)
+{	
+	uint nbPts = eastl::max(f1._samples.size(), f2._samples.size());
+
+	if (nbPts == 0)
+		return SampleFunction();
+	else if (nbPts == 1)
+		return SampleFunction({ tim::interpolate(f1(0.5f), f2(0.5f), coef) });
+	
+	SampleFunction result;
+	for (uint i = 0; i < nbPts; ++i)
+		result.addSample(tim::interpolate(f1(float(i) / (nbPts - 1)), f2(float(i) / (nbPts - 1)), coef));
+
+	return result;
 }
 
 }

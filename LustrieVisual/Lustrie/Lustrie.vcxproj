@@ -23,32 +23,32 @@
     <ProjectGuid>{0E21CE23-7969-44E5-A930-E5E9C0B0AB28}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>Lustrie</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -145,6 +145,7 @@
     <ClInclude Include="..\..\core\Chrono.h" />
     <ClInclude Include="..\..\core\ctpl_stl.h" />
     <ClInclude Include="..\..\core\ImageAlgorithm.h" />
+    <ClInclude Include="..\..\core\LinearAllocator.h" />
     <ClInclude Include="..\..\core\Logger.h" />
     <ClInclude Include="..\..\core\NonCopyable.h" />
     <ClInclude Include="..\..\core\Singleton.h" />
@@ -195,6 +196,9 @@
     <ClInclude Include="..\..\math\Vector.h" />
     <ClInclude Include="..\..\math\WorleyNoise.h" />
     <ClInclude Include="..\..\Planet.h" />
+    <ClInclude Include="..\..\PlanetGrass.h" />
+    <ClInclude Include="..\..\PlanetPlants.h" />
+    <ClInclude Include="..\..\PlanetSystem.h" />
     <ClInclude Include="..\..\PlanetTextureManager.h" />
     <ClInclude Include="..\..\TextureGenerator.h" />
   </ItemGroup>
@@ -233,6 +237,8 @@
     <ClCompile Include="..\..\math\SimplexNoise.cpp" />
     <ClCompile Include="..\..\math\Sphere.cpp" />
     <ClCompile Include="..\..\Planet.cpp" />
+    <ClCompile Include="..\..\PlanetGrass.cpp" />
+    <ClCompile Include="..\..\PlanetPlants.cpp" />
     <ClCompile Include="..\..\PlanetTextureManager.cpp" />
     <ClCompile Include="..\..\TextureGenerator.cpp" />
     <ClCompile Include="..\..\ThirdParty\EASTL-master\source\assert.cpp" />

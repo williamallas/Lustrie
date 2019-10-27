@@ -21,6 +21,8 @@ public:
 
     float operator()(float) const;
 
+	static SampleFunction interpolate(const SampleFunction& f1, const SampleFunction& f2, float coef);
+
 private:
     eastl::vector<float> _samples;
 };

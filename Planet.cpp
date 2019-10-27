@@ -5,6 +5,8 @@ using namespace tim;
 
 const float Planet::NoiseClosure::BASE_SIZE = 60.f;
 
+eastl::unique_ptr<tim::FractalNoise<tim::WorleyNoise<tim::vec3>>> g_fractalWorley3d;
+
 tim::vec3 Planet::computeUp(tim::vec3 pos)
 {
 	return pos.normalized();
@@ -46,7 +48,47 @@ Planet::Planet(uint resolution, const Parameter& param, int seedIn) : _parameter
 	});
 }
 
-void Planet::cull(const tim::Camera& camera, eastl::vector<MeshBuffers*>& visibleBatch)
+vec3 Planet::evalNoise(vec3 v) const
+{
+	v.normalize();
+	v *= (1 + _noise.noiseFun(v*0.5f + 0.5f));
+	return v;
+}
+
+vec3 Planet::evalNormal(vec3 v, float delta) const
+{
+	v.normalize();
+
+	vec3 dir = vec3(0, 0, 1);
+	if(fabsf(v.dot(dir) - 1) < 0.01)
+		dir = vec3(0, 1, 0);
+
+	vec3 axe1 = v.cross(dir);
+	vec3 axe2 = v.cross(axe1);
+
+	Mesh smallMesh;
+	smallMesh.addVertex(evalNoise(v - axe1*delta));
+	smallMesh.addVertex(evalNoise(v));
+	smallMesh.addVertex(evalNoise(v - axe2*delta));
+	smallMesh.addVertex(evalNoise(v + axe1*delta));
+	smallMesh.addVertex(evalNoise(v + axe2*delta));
+
+	smallMesh.addFace({ { 0,1,2,0 }, 3 });
+	smallMesh.addFace({ { 1,3,2,0 }, 3 });
+	smallMesh.addFace({ { 1,4,3,0 }, 3 });
+	smallMesh.addFace({ { 0,4,1,0 }, 3 });
+
+	smallMesh.computeNormals(false);
+	return smallMesh.normal(1);
+}
+
+float Planet::isFloor(vec3 v) const
+{
+	v.normalize();
+	return _noise.isFloor(v*0.5f + 0.5f);
+}
+
+void Planet::cull(const tim::Camera& camera, eastl::vector<ObjectInstance>& visibleBatch)
 {
 	if (!_isLowResReady)
 		return;
@@ -55,12 +97,14 @@ void Planet::cull(const tim::Camera& camera, eastl::vector<MeshBuffers*>& visibl
 	tim::Camera cam = camera;
 	frust.buildCameraFrustum(cam, Frustum::NEAR_PLAN);
 
+	mat4 transform = mat4::Translation(_position);
+
 	for (int side = 0; side < NB_SIDE; ++side)
 	{
 		if (!_isSideReady[side] || (camera.pos - _position).length() > 200 + _parameter.sizePlanet.dot({ 1,1 }))
 		{
 			if (frust.collide( Sphere(_position, _parameter.sizePlanet.dot({ 1,1 })) ))
-			visibleBatch.push_back(&_lowResMesh[side]);
+				visibleBatch.push_back({ &_lowResMesh[side], transform, MaterialParameter() });
 		}
 		else
 		{
@@ -74,8 +118,8 @@ void Planet::cull(const tim::Camera& camera, eastl::vector<MeshBuffers*>& visibl
 					vec3 ray = _planetSide[side].position(_grid[i][j][0][0].indexes[0]) -
 							   _planetSide[side].position(_grid[i][j][0].back().indexes[0]);
 
-					if (frust.collide(Sphere(center, 3*ray.length())))
-						visibleBatch.push_back(&_planetMesh[side][i][j][distanceToLod((center-camera.pos).length())]);
+					if (frust.collide(Sphere(center, max(3*ray.length(), _parameter.sizePlanet.y()*0.5f))))
+						visibleBatch.push_back({ &_planetMesh[side][i][j][distanceToLod((center - camera.pos).length())], transform, MaterialParameter() });
 				}
 			}
 		}
@@ -84,10 +128,11 @@ void Planet::cull(const tim::Camera& camera, eastl::vector<MeshBuffers*>& visibl
 
 int Planet::distanceToLod(float dist) const
 {
-	const float baseDist = 80;
+	const float coef = (_parameter.sizePlanet.x() / 50);
+	const float baseDist = 80 * coef;
 	for (uint i = 0; i < NB_LODS; ++i)
 	{
-		if (baseDist + i*40 > dist)
+		if (baseDist + i*40*coef > dist)
 			return i;
 	}
 
@@ -252,4 +297,41 @@ void Planet::generateSideMeshBuffers(int side)
 	commandContext.finish(true);
 	_isSideReady[side] = true;
 	//dx12::g_commandQueues->waitForFence(fences[0]);
+}
+
+Planet::Parameter Planet::Parameter::generate(int seed)
+{
+	std::mt19937 randEngine(seed);
+	std::uniform_real_distribution<float> random;
+	
+	Parameter param;
+	vec3 distri(powf(random(randEngine), 3.f), powf(random(randEngine), 3.f), powf(random(randEngine), 3.f));
+	distri.normalize();
+	if (distri.z() < 0.5)
+		distri.z() = 0;
+	distri.normalize();
+
+	param.sizePlanet.x() = 40 + random(randEngine) * 100;
+	float scaleMountain = random(randEngine);
+	param.sizePlanet.y() = param.sizePlanet.x() * scaleMountain * 1.5f;
+	
+	float freqFactor = 1;
+	if (scaleMountain > 0.5)
+		freqFactor = 1.2f - scaleMountain;
+
+	param.largeRidgeZScale = distri[0];
+	param.largeSimplexZScale = distri[1];
+	param.largeWorleyZScale = distri[2];
+	param.floorHeight = 0.2f + (param.largeRidgeZScale + param.largeSimplexZScale + param.largeWorleyZScale) * random(randEngine) * 0.5f;
+
+	param.largeRidgeCoef = freqFactor * (param.sizePlanet.x() / 50) * (0.75f + random(randEngine) * 0.5f);
+	param.largeSimplexCoef = freqFactor * (param.sizePlanet.x() / 50) * (0.75f + random(randEngine) * 0.5f);
+	param.largeWorleyCoef = freqFactor * (param.sizePlanet.x() / 50) * (0.75f + random(randEngine) * 0.5f);
+
+	param.invertWorley = randEngine() % 2 == 0;
+	param.largeExponent = 1.f;// +powf(random(randEngine), 2.f);
+	param.simplexDetailZScale = 0.005f + random(randEngine) * 0.02f;
+	param.simplexDetailCoef = 20 + random(randEngine) * 20.f;
+
+	return param;
 }

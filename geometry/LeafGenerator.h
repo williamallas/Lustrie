@@ -22,6 +22,8 @@ namespace tim
             bool triangulate = true;
             bool smoothAlongY = true;
             int leafType=0;
+
+			static Parameter gen(int seed, int sizeCategorie);
         };
 
         LeafGenerator();
@@ -33,7 +35,7 @@ namespace tim
     private:
         UVMesh _mesh;
 
-        void generateWithSplit(const Parameter&);
+        //void generateWithSplit(const Parameter&);
 
         static SampleFunction leafFunction(int);
     };

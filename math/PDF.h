@@ -37,6 +37,7 @@ class TruncatedGaussianPDF //: public PDF<T,GENERATOR>
     Vector2<T> _range = {0,1};
 
 public:
+	TruncatedGaussianPDF() = default;
     TruncatedGaussianPDF(float mean, float sigma, Vector2<T> range) : _mean(mean), _sigma(sigma), _range(range){}
 
     TruncatedGaussianPDF(Vector2<T> range) : _range(range)
@@ -63,22 +64,58 @@ public:
         return *this;
     }
 
-    TruncatedGaussianPDF operator*(T x) const
+    TruncatedGaussianPDF operator+(T x) const
     {
         TruncatedGaussianPDF pdf = *this;
-        return pdf *= x;
+        return pdf += x;
     }
 
-    //friend std::ostream& operator<<(std::ostream& os, const TruncatedGaussianPDF<>& pdf);
+	TruncatedGaussianPDF& operator+=(T x)
+	{
+		_mean += x;
+		_range += x;
+		return *this;
+	}
+
+	TruncatedGaussianPDF operator*(T x) const
+	{
+		TruncatedGaussianPDF pdf = *this;
+		return pdf *= x;
+	}
+
+	TruncatedGaussianPDF& makePositive()
+	{
+		_mean = std::max(0.f, _mean);
+		_range[0] = std::max(0.f, _range[0]);
+		_range[1] = std::max(0.05f, _range[1]);
+		return *this;
+	}
+
+	TruncatedGaussianPDF& translate_scale(float tr, float sc)
+	{
+		float med = (_range[0] + _range[1]) * 0.5f;
+		return *this = ((*this + (-med))*sc) + med + tr;
+	}
+
+	static TruncatedGaussianPDF interpolate(const TruncatedGaussianPDF& pdf1, const TruncatedGaussianPDF& pdf2, float coef)
+	{
+		TruncatedGaussianPDF res;
+		res._mean = tim::interpolate(pdf1._mean, pdf2._mean, coef);
+		res._sigma = tim::interpolate(pdf1._sigma, pdf2._sigma, coef);
+		res._range = tim::interpolate(pdf1._range, pdf2._range, coef);
+		return res;
+	}
+
+	std::ostream& print(std::ostream& os) const
+	{
+		os << "mu=" << (_mean) << " sigma=" << (_sigma) << " range=" << _range.x() << "," << _range.y();
+		return os;
+	}
 };
 
-/*
-inline std::ostream& operator<<(std::ostream& os, const TruncatedGaussianPDF<>& pdf)
-{
-    os << "mu=" << (pdf._mean) << " sigma=" << (pdf._sigma) << " range=" << pdf._range.x() << "," << pdf._range.y();
-    return os;
-}
-*/
+
+
+
 
 }
 

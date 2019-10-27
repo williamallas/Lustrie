@@ -30,6 +30,7 @@ class TexturePool : NonCopyable
 
 public:
 	TexturePool(uint32_t size);
+	~TexturePool() = default;
 
 	void setTexture(uint32_t, const ProxyTexture&);
 	uint32_t size() const;

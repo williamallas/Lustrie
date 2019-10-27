@@ -84,6 +84,9 @@ namespace tim
         T& z() { static_assert(N>2, "Invalid component access."); return _val[2]; }
         T& w() { static_assert(N>3, "Invalid component access."); return _val[3]; }
 
+        T* begin() const { return std::begin(_val); }
+        T* end() const { return std::end(_val); }
+
         Vector& set(const T& v, int i) { _val[i] = v; return *this; }
 
         Vector& operator=(const Vector& v) { for(size_t i=0;i<N;++i)_val[i]=v[i]; return *this; }

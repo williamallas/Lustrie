@@ -6,13 +6,13 @@ MeshBuffers::MeshBuffers(const eastl::shared_ptr<dx12::GpuBuffer>& vb, const eas
 
 }
 
-MeshBuffers MeshBuffers::createFromMesh(const tim::BaseMesh& mesh, uint64_t* fence)
+MeshBuffers MeshBuffers::createFromMesh(const tim::BaseMesh& mesh, uint64_t* fence, tim::uint nbPointInFace, bool useNormal, bool useUV)
 {
 	if (mesh.nbVertices() <= 0)
 		return MeshBuffers();
 
-	size_t bufferSize = mesh.requestBufferSize(true, true);
-	auto indexBuffer = mesh.indexData();
+	size_t bufferSize = mesh.requestBufferSize(useNormal, useUV);
+	auto indexBuffer = mesh.indexData(nbPointInFace);
 
 	if (indexBuffer.empty() || bufferSize == 0)
 		return MeshBuffers();
@@ -25,14 +25,33 @@ MeshBuffers MeshBuffers::createFromMesh(const tim::BaseMesh& mesh, uint64_t* fen
 
 	auto& commandContext = dx12::CommandContext::AllocContext(dx12::CommandQueue::COPY);
 
-	commandContext.initBuffer(*vb, buffer_data, bufferSize);
-	commandContext.initBuffer(*ib, indexBuffer.data(), indexBuffer.size() * sizeof(tim::uint));
+	for (size_t i = 0; i < bufferSize; i += (1 << 20))
+	{
+		size_t numBytes = eastl::min(size_t(1 << 20), bufferSize - i);
+		commandContext.initBuffer(*vb, buffer_data + i, numBytes, i);
+
+		if (i > 0 && i % (20 << 20) == 0 && fence == nullptr)
+			commandContext.flush(true);
+	}
+
+	delete buffer_data;
+	bufferSize = indexBuffer.size() * sizeof(tim::uint);
+	buffer_data = (byte*)indexBuffer.data();
+
+	for (size_t i = 0; i < bufferSize; i += (1 << 20))
+	{
+		size_t numBytes = eastl::min(size_t(1 << 20), bufferSize - i);
+		commandContext.initBuffer(*ib, buffer_data + i, numBytes, i);
+
+		if (i > 0 && i % (20 << 20) == 0 && fence == nullptr)
+			commandContext.flush(true);
+	}
 
 	if (fence != nullptr)
 		*fence = commandContext.finish(false);
 	else
 		commandContext.finish(true);
-
+		
 	MeshBuffers res;
 	res._vb = eastl::shared_ptr<dx12::GpuBuffer>(vb);
 	res._ib = eastl::shared_ptr<dx12::GpuBuffer>(ib);

@@ -49,7 +49,7 @@ namespace dx12
 					break;
 				}
 
-				desc.InputSlot = 0; // vertex buffer slot
+				desc.InputSlot = _inputSlot; // vertex buffer slot
 				desc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
 				desc.InstanceDataStepRate = 0; 
 				
@@ -57,6 +57,56 @@ namespace dx12
 				_layout.push_back(desc);
 				_names.push_back(elem.first);
 			}
+
+			_inputSlot++;
+			setupName();
+		}
+
+		void addMat4PerInstanceElement(const eastl::vector<eastl::string>& layout)
+		{
+			for (auto elem : layout)
+			{
+				for (UINT i = 0; i < 4; ++i)
+				{
+					D3D12_INPUT_ELEMENT_DESC desc;
+					desc.SemanticName = NULL; // setup later
+					desc.SemanticIndex = i;
+					desc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+					desc.AlignedByteOffset = 16 * i; // in buffer stride
+
+					desc.InputSlot = _inputSlot; // vertex buffer slot
+					desc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA;
+					desc.InstanceDataStepRate = 1;
+
+					_layout.push_back(desc);
+					_names.push_back(elem);
+				}
+
+				_inputSlot++;
+			}
+
+			setupName();
+		}
+
+		void addPerInstanceMaterial() // predefined name
+		{
+			D3D12_INPUT_ELEMENT_DESC desc;
+			desc.SemanticName = NULL; // setup later
+			desc.SemanticIndex = 0;
+			desc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+			desc.AlignedByteOffset = 0; // in buffer stride
+
+			desc.InputSlot = _inputSlot++; // vertex buffer slot
+			desc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA;
+			desc.InstanceDataStepRate = 1;
+
+			_layout.push_back(desc);
+			_names.push_back("MATERIAL_TEXTURES");
+
+			desc.Format = DXGI_FORMAT_R32G32B32A32_SINT;
+			desc.AlignedByteOffset = 16;
+			_layout.push_back(desc);
+			_names.push_back("MATERIAL");
 
 			setupName();
 		}
@@ -68,11 +118,13 @@ namespace dx12
 	private:
 		eastl::vector<D3D12_INPUT_ELEMENT_DESC> _layout;
 		eastl::vector<eastl::string> _names;
+		UINT _inputSlot = 0;
 
 		void clear()
 		{
 			_layout.clear();
 			_names.clear();
+			_inputSlot = 0;
 		}
 
 		void setupName()

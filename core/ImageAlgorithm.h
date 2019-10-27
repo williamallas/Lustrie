@@ -59,7 +59,7 @@ namespace tim
 
         ImageAlgorithm resized(uivec2) const;
         ImageAlgorithm transformed(const imat2&) const;
-		ImageAlgorithm makeTilable() const;
+        ImageAlgorithm makeTilable() const;
 
         template<class F> void exportBMP(eastl::string, const F&) const; // expect a T -> bvec3 function
 
@@ -76,7 +76,7 @@ namespace tim
         const T& get(uivec2) const;
         T& get(uivec2);
 
-		ImageAlgorithm resized_up(uivec2) const;
+        ImageAlgorithm resized_up(uivec2) const;
 
         bool check(uivec2 v) const { return v.x() < _size.x() && v.y() < _size.y(); }
     };
@@ -434,10 +434,10 @@ namespace tim
         return res;
     }
 
-	template <class T>
-	ImageAlgorithm<T> ImageAlgorithm<T>::resized_up(uivec2 res) const
+    template <class T>
+    ImageAlgorithm<T> ImageAlgorithm<T>::resized_up(uivec2 res) const
 	{
-		ImageAlgorithm<T> img(res);
+        ImageAlgorithm<T> img(res);
 
 		for (uint i = 0; i<res.x(); ++i)
 			for (uint j = 0; j < res.y(); ++j) {
@@ -472,11 +472,11 @@ namespace tim
         return img;
     }
 
-	template <class T>
-	ImageAlgorithm<T> ImageAlgorithm<T>::makeTilable() const
+    template <class T>
+    ImageAlgorithm<T> ImageAlgorithm<T>::makeTilable() const
 	{
 		const float POW = 1.f;
-		ImageAlgorithm<T> img(_size);
+        ImageAlgorithm<T> img(_size);
 		
 		for (uint i = 0; i < _size.x(); ++i) for (uint j = 0; j < _size.y(); ++j)
 		{

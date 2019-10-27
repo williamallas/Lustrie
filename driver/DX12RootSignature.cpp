@@ -96,4 +96,32 @@ namespace dx12
 		desc.ShaderVisibility = visibility;
 		return desc;
 	}
+
+	D3D12_STATIC_SAMPLER_DESC RootSignature::trilinearWrapSampler(UINT reg, D3D12_SHADER_VISIBILITY visibility)
+	{
+		D3D12_STATIC_SAMPLER_DESC desc;
+		setDefault(desc);
+		desc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+		desc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+		desc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+		desc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+
+		desc.ShaderRegister = reg;
+		desc.ShaderVisibility = visibility;
+		return desc;
+	}
+
+	D3D12_STATIC_SAMPLER_DESC RootSignature::trilinearClampSampler(UINT reg, D3D12_SHADER_VISIBILITY visibility)
+	{
+		D3D12_STATIC_SAMPLER_DESC desc;
+		setDefault(desc);
+		desc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+		desc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+		desc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+		desc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+
+		desc.ShaderRegister = reg;
+		desc.ShaderVisibility = visibility;
+		return desc;
+	}
 }

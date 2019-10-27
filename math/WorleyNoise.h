@@ -193,7 +193,7 @@ namespace tim
 
                 for(size_t i=0 ; i<node->container.size() ; ++i)
                 {
-					uint gg = node->container[i];
+                    //uint gg = node->container[i];
                     float dist = (_points[ node->container[i] ] - p).length2();
 
                     if(dist < size*size)

@@ -12,6 +12,9 @@
 #include "graphics/MeshBuffers.h"
 #include <geometry\LTree.h>
 
+#include <Objbase.h>
+#include <D3d12sdklayers.h>
+#include <atlbase.h>
 
 using namespace eastl;
 using namespace tim;
@@ -82,15 +85,23 @@ namespace dx12
 		{
 			_frameConstantsBuffer[i].alloc(1, sizeof(FrameConstants));
 			_frameConstantsBufferPtr[i] = (FrameConstants*)_frameConstantsBuffer[i].map();
+
+			_materialBuffers[i].alloc(MAX_INSTANCE, sizeof(InstanceConstants));
+			_materialBuffersPtr[i] = (InstanceConstants*)_materialBuffers[i].map();
+
+			_matrixBuffers[i].alloc(MAX_INSTANCE, sizeof(tim::mat4));
+			_matrixBuffersPtr[i] = (tim::mat4*)_matrixBuffers[i].map();
 		}
 
 		return true;
 	}
 
-	void Renderer::render(const tim::Camera& camera, const Material& material, const eastl::vector<MeshBuffers*>& meshs)
+	void Renderer::beginRender(const tim::Camera& camera, float timeElapsed)
 	{
 		_frameConstantsBufferPtr[_bufferIndex]->proj = mat4::Projection(camera.fov, _rendererInfo.resolution.x() / float(_rendererInfo.resolution.y()), 0.5f, 1000).transposed();
 		_frameConstantsBufferPtr[_bufferIndex]->view = mat4::View(camera.pos, camera.dir, camera.up).transposed();
+		_frameConstantsBufferPtr[_bufferIndex]->projView = _frameConstantsBufferPtr[_bufferIndex]->view * _frameConstantsBufferPtr[_bufferIndex]->proj;
+		_frameConstantsBufferPtr[_bufferIndex]->cameraPos_time = vec4(camera.pos, timeElapsed);
 
 		// start recording the command list
 
@@ -105,19 +116,6 @@ namespace dx12
 		_commandContext->commandList()->ResourceBarrier(1, &barrier);
 
 		_commandContext->resourceBarrier(_depthBuffers[_bufferIndex], D3D12_RESOURCE_STATE_DEPTH_WRITE, true);
-		
-		_commandContext->commandList()->SetPipelineState(material._pipeline->getPipelineState());
-		_commandContext->commandList()->SetGraphicsRootSignature(material._signature->rootSignature());
-
-		auto pool = material.texturePool();
-		if (pool)
-		{
-			pool->lock();
-			ID3D12DescriptorHeap* heaps[] = { pool->getHeap().heapPtr() };
-			_commandContext->commandList()->SetDescriptorHeaps(1, heaps);
-			_commandContext->commandList()->SetGraphicsRootDescriptorTable(2, pool->_srvDescr[0].gpuHandle());
-			pool->unlock();
-		}
 
 		// set the back buffer as the render targe
 		D3D12_CPU_DESCRIPTOR_HANDLE targetBuffer[1];
@@ -126,34 +124,34 @@ namespace dx12
 		depthBuffer[0] = _depthBuffers[_bufferIndex].depthDSV().cpuHandle();
 		_commandContext->commandList()->OMSetRenderTargets(1, targetBuffer, FALSE, depthBuffer);
 
+		// clear render target
 		float color[2][4] = { { 0.3f, 0.5f, 1, 1 },{ 1, 0.5f, 1, 1 } };
 		_commandContext->commandList()->ClearRenderTargetView(targetBuffer[0], color[0], 0, nullptr);
 		_commandContext->commandList()->ClearDepthStencilView(depthBuffer[0], D3D12_CLEAR_FLAG_DEPTH, _depthBuffers[0].clearDepth(), 0, 0, nullptr);
-		_commandContext->setConstantBuffer(0, _frameConstantsBuffer[_bufferIndex].gpuVirtualAdress());
 
-		CD3DX12_VIEWPORT viewport = CD3DX12_VIEWPORT( 0.0f, 0.0f, static_cast<float>(_rendererInfo.resolution.x()), static_cast<float>(_rendererInfo.resolution.y()) );
-		CD3DX12_RECT rect = CD3DX12_RECT( 0, 0, static_cast<LONG>(_rendererInfo.resolution.x()), static_cast<LONG>(_rendererInfo.resolution.y()) );
+		CD3DX12_VIEWPORT viewport = CD3DX12_VIEWPORT(0.0f, 0.0f, static_cast<float>(_rendererInfo.resolution.x()), static_cast<float>(_rendererInfo.resolution.y()));
+		CD3DX12_RECT rect = CD3DX12_RECT(0, 0, static_cast<LONG>(_rendererInfo.resolution.x()), static_cast<LONG>(_rendererInfo.resolution.y()));
 		_commandContext->commandList()->RSSetViewports(1, &viewport);
 		_commandContext->commandList()->RSSetScissorRects(1, &rect);
 
-		_commandContext->commandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		_indexInBuffer = 0;
+	}
 
-		for (size_t i = 0; i < meshs.size(); ++i)
-		{
-			_commandContext->commandList()->IASetVertexBuffers(0, 1, &meshs[i]->vb()->vertexBufferView());
-			_commandContext->commandList()->IASetIndexBuffer(&meshs[i]->ib()->indexBufferView());
-			_commandContext->commandList()->DrawIndexedInstanced(meshs[i]->numIndices() >= 0 ? uint32_t(meshs[i]->numIndices()) : meshs[i]->ib()->elemCount(),
-																1, meshs[i]->offset(), 0, 0);
-		}
-		//_commandContext->commandList()->DrawInstanced(_vertexBufferTestGpu.elemCount(), 1, 0, 0);
-		
+	void Renderer::endRender()
+	{
+		D3D12_RESOURCE_BARRIER barrier;
+		barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+		barrier.Transition.pResource = _backBufferRenderTarget[_bufferIndex];
 		barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
 		barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+		barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+
 		_commandContext->commandList()->ResourceBarrier(1, &barrier);
 		_commandContext->resourceBarrier(_depthBuffers[_bufferIndex], D3D12_RESOURCE_STATE_COMMON, true);
 
 		_fenceValue[_bufferIndex] = _commandContext->flush(false, true);
-		
+
 		HRESULT result;
 		if (_rendererInfo.vsync)
 			result = _swapChain->Present(1, 0);
@@ -164,6 +162,59 @@ namespace dx12
 
 		_bufferIndex = (_bufferIndex + 1) % NB_BUFFERS;
 		_commandQueueManager->waitForFence(_fenceValue[_bufferIndex]);
+	}
+
+	void Renderer::render(const Material& material, const eastl::vector<ObjectInstance>& object)
+	{	
+		if (object.empty())
+			return;
+
+		_ASSERT(_indexInBuffer + object.size() <= MAX_INSTANCE);
+
+		for (size_t i = 0; i < object.size(); ++i)
+		{
+			_matrixBuffersPtr[_bufferIndex][_indexInBuffer + i] = object[i].tranform;
+			_materialBuffersPtr[_bufferIndex][_indexInBuffer + i].textures = object[i].parameter.textures;
+			_materialBuffersPtr[_bufferIndex][_indexInBuffer + i].material = object[i].parameter.parameter;
+		}
+
+		_commandContext->commandList()->SetPipelineState(material._pipeline->getPipelineState());
+		_commandContext->commandList()->SetGraphicsRootSignature(material._signature->rootSignature());
+
+		_commandContext->setConstantBuffer(0, _frameConstantsBuffer[_bufferIndex].gpuVirtualAdress());
+
+		auto pool = material.texturePool();
+		if (pool)
+		{
+			pool->lock();
+			ID3D12DescriptorHeap* heaps[] = { pool->getHeap().heapPtr() };
+			_commandContext->commandList()->SetDescriptorHeaps(1, heaps);
+			_commandContext->commandList()->SetGraphicsRootDescriptorTable(1, pool->_srvDescr[0].gpuHandle());
+			pool->unlock();
+		}
+
+		_commandContext->commandList()->IASetPrimitiveTopology(object[0].mesh->topology() == MeshBuffers::Triangles ? 
+			D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST : D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
+
+		for (size_t i = 0; i < object.size(); ++i)
+		{
+			
+			auto mesh = object[i].mesh;
+
+			D3D12_VERTEX_BUFFER_VIEW views[3] = { mesh->vb()->vertexBufferView(), _matrixBuffers[_bufferIndex].vertexBufferView(), _materialBuffers[_bufferIndex].vertexBufferView() };
+			views[1].BufferLocation += sizeof(mat4)*(i + _indexInBuffer);
+			views[2].BufferLocation += sizeof(InstanceConstants)*(i + _indexInBuffer);
+
+			_commandContext->commandList()->IASetVertexBuffers(0, 3, views);
+			_commandContext->commandList()->IASetIndexBuffer(&mesh->ib()->indexBufferView());
+
+			//_commandContext->setConstantBuffer(1, _materialBuffers[_bufferIndex].gpuVirtualAdress() + sizeof(InstanceConstants)*(i + _indexInMaterialBuffer));
+
+			_commandContext->commandList()->DrawIndexedInstanced(mesh->numIndices() >= 0 ? uint32_t(mesh->numIndices()) : mesh->ib()->elemCount(),
+																1, mesh->offset(), 0, 0);
+		}
+
+		_indexInBuffer += object.size();
 	}
 
 
@@ -182,6 +233,15 @@ namespace dx12
 
 	void Renderer::close()
 	{
+		for (int i = 0; i < NB_BUFFERS; ++i)
+		{
+			_frameConstantsBuffer[i].unmap();
+			_frameConstantsBufferPtr[i] = nullptr;
+
+			_materialBuffers[i].unmap();
+			_materialBuffersPtr[i] = nullptr;
+		}
+
 		_commandContext->finish(true);
 		_commandContext = nullptr;
 		_commandQueueManager->sync();
@@ -316,9 +376,13 @@ namespace dx12
 	void Renderer::enableDebugLayer() const
 	{
 		ID3D12Debug* debugController;
+		ID3D12Debug1* debugControler1;
 		if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
 		{
 			debugController->EnableDebugLayer();
+
+			debugController->QueryInterface(IID_PPV_ARGS(&debugControler1));
+			debugControler1->SetEnableGPUBasedValidation(true);
 			debugController->Release();
 		}
 		else
@@ -340,13 +404,13 @@ namespace dx12
 		eastl::string shaderModel;
 		switch (type)
 		{
-		case ShaderType::VERTEX: shaderModel = "vs_5_0";
+		case ShaderType::VERTEX: shaderModel = "vs_5_1";
 			break;
-		case ShaderType::PIXEL: shaderModel = "ps_5_0";
+		case ShaderType::PIXEL: shaderModel = "ps_5_1";
 			break;
-		case ShaderType::COMPUTE: shaderModel = "cs_5_0";
+		case ShaderType::COMPUTE: shaderModel = "cs_5_1";
 			break;
-		case ShaderType::GEOMETRY: shaderModel = "gs_5_0";
+		case ShaderType::GEOMETRY: shaderModel = "gs_5_1";
 			break;
 		}
 

@@ -359,15 +359,18 @@ void BaseMesh::clearFaces()
     _faces.clear();
 }
 
-eastl::vector<uint> BaseMesh::indexData() const
+eastl::vector<uint> BaseMesh::indexData(uint nbPointsInFace) const
 {
+	if (nbPointsInFace == 0)
+		nbPointsInFace = 3;
+
 	eastl::vector<uint> data;
-	data.reserve(_faces.size() * 3);
+	data.reserve(_faces.size() * nbPointsInFace);
 
 	for (const auto& f : _faces)
 	{
-		if (f.nbIndexes >= 3)
-			data.insert(data.end(), f.indexes.begin(), f.indexes.begin() + 3);
+		if (f.nbIndexes == nbPointsInFace)
+			data.insert(data.end(), f.indexes.begin(), f.indexes.begin() + nbPointsInFace);
 	}
 
 	return data;
@@ -390,6 +393,11 @@ void BaseMesh::computeJoinNormals(eastl::vector<BaseMesh*>& meshs, int smooth)
 
 		counter += meshs[i]->nbVertices();
 	}
+}
+
+Sphere BaseMesh::computeBoundingSphere()
+{
+	return Sphere::computeSphere(reinterpret_cast<float*>(_vertices.data()), _vertices.size(), 3);
 }
 
 /* Mesh */

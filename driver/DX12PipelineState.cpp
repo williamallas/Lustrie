@@ -9,7 +9,7 @@ using Microsoft::WRL::ComPtr;
 namespace dx12
 {
 	PipelineState::PipelineState(ID3D12Device* device, ID3D12RootSignature* rootSignature, DX12InputLayout& inLayout, 
-		const eastl::string& shaderSrc, const ForwardPipelineParam& param)
+		const eastl::string& shaderSrc, const ForwardPipelineParam& param, bool useGS)
 	{
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = {};
 		initDesc(desc, inLayout, param);
@@ -18,6 +18,16 @@ namespace dx12
 
 		Shader vShader = Renderer::compileShader(shaderSrc, ShaderType::VERTEX, "vs_main");
 		Shader pShader = Renderer::compileShader(shaderSrc, ShaderType::PIXEL, "ps_main");
+		Shader gShader;
+		if (useGS)
+		{
+			gShader = Renderer::compileShader(shaderSrc, ShaderType::GEOMETRY, "gs_main");
+			if (gShader)
+			{
+				desc.GS.pShaderBytecode = reinterpret_cast<UINT8*>(gShader->GetBufferPointer());
+				desc.GS.BytecodeLength = gShader->GetBufferSize();
+			}
+		}
 
 		if (vShader)
 		{
@@ -66,7 +76,7 @@ namespace dx12
 		desc.SampleDesc.Count = 1; // no msaa
 		desc.SampleDesc.Quality = 0;
 
-		desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		desc.PrimitiveTopologyType = convertToD3DType(param.primitive);
 
 		desc.RasterizerState.FillMode = param.wireframe ? D3D12_FILL_MODE_WIREFRAME:D3D12_FILL_MODE_SOLID;
 		desc.RasterizerState.CullMode = param.cullFace ? D3D12_CULL_MODE_BACK : D3D12_CULL_MODE_NONE;
@@ -80,5 +90,18 @@ namespace dx12
 		desc.RasterizerState.ForcedSampleCount = 0;
 		desc.RasterizerState.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
 	
+	}
+
+	D3D12_PRIMITIVE_TOPOLOGY_TYPE PipelineState::convertToD3DType(Primitive primitive)
+	{
+		switch (primitive)
+		{
+		case Triangle:
+			return D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		case Point:
+			return D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
+		default:
+			return D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		}
 	}
 }

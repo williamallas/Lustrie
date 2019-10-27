@@ -59,7 +59,7 @@ void System::close()
 bool System::init()
 {
 	const bool FULLSCREEN = false;
-	const ivec2 RESOLUTION = { 1280,720 };
+	const ivec2 RESOLUTION = { 1600,900 };
 	openWindow(RESOLUTION, FULLSCREEN);
 
 	_isInit = _game.init(RESOLUTION, FULLSCREEN, _hwnd);

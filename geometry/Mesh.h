@@ -9,6 +9,7 @@
 #include "math/Vector.h"
 #include "math/Quaternion.h"
 #include "core/ImageAlgorithm.h"
+#include "math/Sphere.h"
 
 namespace tim
 {
@@ -20,7 +21,7 @@ namespace tim
     public:
         struct Face
         {
-            eastl::array<uint,4> indexes; // support quads triangles and lines
+            eastl::array<uint,4> indexes; // support quads triangles, lines and points
             int nbIndexes;
         };
 
@@ -48,7 +49,7 @@ namespace tim
         vec3 position(uint) const;
 
 		const vec3* vertexData() const;
-		eastl::vector<uint> indexData() const;
+		eastl::vector<uint> indexData(uint nbPointsInFace = 3) const;
 
 		size_t requestBufferSize(bool withNormal = true, bool withUv = false) const;
 		void fillBuffer(void*, bool withNormal = true, bool withUv = false) const;
@@ -65,6 +66,11 @@ namespace tim
         BaseMesh& invertFaces();
 
 		static void computeJoinNormals(eastl::vector<BaseMesh*>&, int smooth = 0);
+
+		vec3 vertex(uint) const;
+		vec3 normal(uint) const;
+
+		Sphere computeBoundingSphere();
 		
     protected:
 		eastl::vector<vec3> _vertices;
@@ -89,6 +95,9 @@ namespace tim
     inline uint BaseMesh::nbVertices() const { return _vertices.size(); }
 	inline uint BaseMesh::nbFaces() const { return _faces.size(); }
 	inline const vec3* BaseMesh::vertexData() const { return _vertices.data(); }
+
+	inline vec3 BaseMesh::vertex(uint index) const { return _vertices[index]; }
+	inline vec3 BaseMesh::normal(uint index) const { return _normals[index]; }
 
     template<class T> BaseMesh& BaseMesh::mapVertices(const T& tr)
     {
@@ -122,6 +131,7 @@ namespace tim
         Mesh& operator=(Mesh&&) = default;
 
         Mesh& addVertex(vec3);
+		Mesh& addVertexAndNormal(vec3, vec3);
 
         Mesh& constructLine(vec3, vec3);
         Mesh& constructTriangle(vec3, vec3, vec3);
@@ -131,6 +141,7 @@ namespace tim
     };
 
 	inline Mesh& Mesh::addVertex(vec3 v) { _vertices.push_back(v); return *this; }
+	inline Mesh& Mesh::addVertexAndNormal(vec3 v, vec3 n) { _vertices.push_back(v); _normals.push_back(n); return *this; }
 
 
 	/* UV Mesh */

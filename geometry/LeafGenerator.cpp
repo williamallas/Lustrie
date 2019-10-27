@@ -23,7 +23,8 @@ void LeafGenerator::generate(const Parameter& param)
         for(uint x=0 ; x<param.resX ; ++x)
         {
             float xcoord = float(x) / (param.resX-1);
-            float funEval = fun(xcoord);
+            float funEval = 0.5f*fun(xcoord);
+			
             if(x == 0 || x == param.resX-1)
             {
                 if(y == 1)
@@ -88,6 +89,42 @@ void LeafGenerator::generate(const Parameter& param)
         _mesh += _mesh.scaled(vec3(1,-1,1)).invertFaces();
 }
 
+LeafGenerator::Parameter LeafGenerator::Parameter::gen(int seed, int sizeCategorie)
+{
+	std::mt19937 gen(seed);
+	std::uniform_real_distribution<float> random(-1, 1);
+
+	Parameter param;
+	param.smoothAlongY = gen() % 2 == 0;
+	param.triangulate = true;
+	param.curvature = (random(gen)+1)*0.5f;
+	param.innerCurvature = random(gen) * 0.4f;
+	param.outerCurvature = random(gen) * 0.4f;
+	param.leafType = gen() % 3;
+	param.size = { 0.4f + ((random(gen) + 1)*0.5f)*0.6f, 0 };
+	param.size.y() = 0.2f + ((random(gen) + 1)*0.5f) * (param.size.x() - 0.2f);
+
+	random = std::uniform_real_distribution<float>(0,1);
+	switch (sizeCategorie)
+	{
+	case 0: 
+		param.resX = 4; 
+		param.size *= (0.05f + random(gen)*0.2f);
+		break;
+	case 1: 
+		param.resX = 6; 
+		param.size *= (0.4f + random(gen)*1.2f);
+		break;
+	case 2: 
+		param.resX = 10; 
+		param.size *= (1.5f + random(gen) * 3.f);
+		break;
+	default : param.resX = 4; break;
+	}
+
+	return param;
+}
+
 SampleFunction LeafGenerator::leafFunction(int choice)
 {
     SampleFunction fun;
@@ -96,7 +133,8 @@ SampleFunction LeafGenerator::leafFunction(int choice)
     {
     case 0:
         for(float x=0 ; x<=1 ; x += 0.1f)
-            fun.addSample(1.2f * (x*(1 - x)));
+            fun.addSample(4.f * (x*(1 - x)));
+		break;
 
     case 1:
         fun.addSample(0);
